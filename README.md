@@ -3,6 +3,9 @@
 
 Xist's Unreal C++ Build & Dev Tools.  Requires PowerShell 7+.
 
+Main Branch: https://github.com/XistGG/UnrealXistTools/
+
+
 ## Setup
 
 - Make sure you are using PowerShell 7+

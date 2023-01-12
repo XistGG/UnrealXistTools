@@ -1,6 +1,14 @@
 #
 # UnrealProjectClean.ps1
 #
+# See: https://github.com/XistGG/UnrealXistTools/
+#
+# Clean an Unreal Project
+#
+#   - Remove Binaries dirs
+#   - Remove Intermediate dirs
+#   - Generate Project Files
+#
 
 [CmdletBinding()]
 param(
@@ -10,7 +18,7 @@ param(
 
 
 # If user didn't specify a project file, default to current directory
-if ((!$PSBoundParameters.ContainsKey('UProjectFile')) -or ($UProjectFile -eq ''))
+if (!$PSBoundParameters.ContainsKey('UProjectFile'))
 {
     $UProjectFile = '.'
 }

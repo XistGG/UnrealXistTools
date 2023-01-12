@@ -1,6 +1,31 @@
 # 
 # UProjectFile.ps1
 #
+# See: https://github.com/XistGG/UnrealXistTools/
+#
+# This is an include file.  It takes an optionally set
+# $UProjectFile value and expands it to an actual MyGame.uproject
+# file location.
+#
+# The value you pass in can be:
+#
+# (empty) -> '.'
+# '../MyGame.uproject'
+# '../MyGame' # (same as '../MyGame/MyGame.uproject')
+#
+# If the passed in value does not expand to a valid uproject file,
+# an exception is thrown.
+#
+# If no exception is thrown, these variables will be set:
+#
+# $UProjectFile = absolute path to MyGame.uproject
+# $UProjectDirectory = absolute path to MyGame.uproject parent directory
+#
+
+if ($UProjectFile -eq '')
+{
+    $UProjectFile = '.'
+}
 
 # Try to get information about the UProject (file or directory)
 $UProjectItem = Get-Item -Path $UProjectFile 2> $null
@@ -13,8 +38,15 @@ if (!$UProjectItem.Exists)
 # First check of $UProjectFile is a file
 if (!$UProjectItem.PSIsContainer)
 {
-    # Expand this file to its absolute path
-    $UProjectFile = $UProjectItem.FullName
+    if ($UProjectItem.Name -cmatch '\.uproject$')
+    {
+        # Expand this file to its absolute path
+        $UProjectFile = $UProjectItem.FullName
+    }
+    else
+    {
+        throw "File is not a UProject: $UProjectFile"
+    }
 }
 else
 {

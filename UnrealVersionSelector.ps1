@@ -1,6 +1,8 @@
 #
 # UnrealVersionSelector.ps1
 #
+# See: https://github.com/XistGG/UnrealXistTools/
+#
 # Usage:
 #
 #   UnrealVersionSelector.ps1
@@ -74,7 +76,7 @@ if (!(&IsUnrealVersionSelectorValid $UnrealVersionSelector))
 ################################################################################
 
 # If user didn't specify a project file, default to current directory
-if ((!$PSBoundParameters.ContainsKey('UProjectFile')) -or ($UProjectFile -eq ''))
+if (!$PSBoundParameters.ContainsKey('UProjectFile'))
 {
     $UProjectFile = '.'
 }
@@ -111,7 +113,7 @@ else
 
 if ($e -ne 0)
 {
-    Write-Warning "UnrealVersionSelector exited with code $e"
+    Write-Warning "Exit Code $e"
 }
 else
 {
