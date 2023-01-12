@@ -79,6 +79,6 @@ if (!$Quiet)
 {
     Write-Host ""
     Write-Host "UProjectFile=$UProjectFile"
-    Write-Host "UProjectDir=$UProjectDirectory"
+    Write-Host "UProjectDirectory=$UProjectDirectory"
     Write-Host ""
 }
