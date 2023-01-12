@@ -16,10 +16,10 @@ Main Branch: https://github.com/XistGG/UnrealXistTools/
 
 # Build Tools
 
-- [UProjectClean.ps1](#UProjectClean)
+- [UProjectClean.ps1](#uprojectcleanps1)
   - Completely Clean/Reset Repo/Depot
   - Removes all generated C++ Build files
-- [UnrealVersionSelector.ps1](#UnrealVersionSelector)
+- [UnrealVersionSelector.ps1](#unrealversionselectorps1)
 
 
 # UProjectClean.ps1
