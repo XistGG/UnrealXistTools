@@ -19,7 +19,6 @@ Xist's Unreal C++ Build & Dev Tools.  Requires PowerShell 7+.
 - [UnrealVersionSelector](#UnrealVersionSelector)
 
 
-<a id='UProjectClean'></a>
 # UProjectClean
 
 - Delete all `Binaries` (generated data)
@@ -39,7 +38,6 @@ UProjectClean.ps1
 The above works if your project folder name is the same as your uproject name (e.g. 'Foo/Foo.uproject')
 
 
-<a id='UnrealVersionSelector'></a>
 # UnrealVersionSelector
 
 - Find and execute Epic Launcher version of `UnrealVersionSelector`
