@@ -30,13 +30,6 @@ param(
 # defer to Environment if var is set
 $UnrealVersionSelector = $env:UnrealVersionSelector
 
-# a list of common locations to scan supporting multiple platforms
-# TODO add Mac & Linux support
-$DEFAULTS = @(
-    'C:\Program Files (x86)\Epic Games\Launcher\Engine\Binaries\Win64\UnrealVersionSelector.exe',
-    'C:\Program Files\Epic Games\Launcher\Engine\Binaries\Win32\UnrealVersionSelector.exe'
-)
-
 
 function IsUnrealVersionSelectorValid
 {
@@ -50,23 +43,32 @@ function IsUnrealVersionSelectorValid
 }
 
 
+# If there isn't already a known Unreal Version Selector
 if (!(&IsUnrealVersionSelectorValid $UnrealVersionSelector))
 {
-    $UnrealVersionSelector = $null
-
-    foreach ($Path in $DEFAULTS)
+    # Search the Windows Registry to find the Epic Games Launcher version
+    $RegistryItem = Get-ItemProperty "Registry::HKEY_CLASSES_ROOT\Unreal.ProjectFile\shell\open\command" 2> $null
+    if (!$RegistryItem)
     {
-        if (&IsUnrealVersionSelectorValid $Path)
-        {
-            $UnrealVersionSelector = $Path
-            break
-        }
+        throw "Unreal.ProjectFile Registry Keys NOT FOUND! You must set the UnrealVersionSelector environment variable"
     }
 
-    if ($UnrealVersionSelector -eq $null)
+    # Parse the default command line to get the location of Unreal Version Selector
+    $RegistryCommand = $RegistryItem.'(default)'
+    if ($RegistryCommand -cmatch '^\s*"([^"]+)"')
     {
-        Write-Error "UnrealVersionSelector NOT FOUND! You must set the UnrealVersionSelector environment variable"
-        exit 1
+        $UnrealVersionSelector = $Matches[1]
+    }
+    else
+    {
+        $UnrealVersionSelector = ($RegistryCommand -split ' ')[0]
+    }
+
+    # If there is still no valid Unreal Version Selector, that's a fatal error
+    if (!(&IsUnrealVersionSelectorValid $UnrealVersionSelector))
+    {
+        # We needed to parse the registry to find Unreal Version Selector, but the value was unexpected
+        throw "Failed to parse Registry Value: $RegistryCommand"
     }
 }
 
