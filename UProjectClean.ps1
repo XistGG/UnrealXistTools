@@ -44,6 +44,12 @@ foreach ($TempDir in $TempDirs)
     Remove-Item -Force -Recurse $TempDir
 }
 
+# If we output a bunch of deleted directories, add whitespace line after
+if ($TempDirs.count -gt 0)
+{
+    Write-Host ""
+}
+
 
 ################################################################################
 ###  Generate Project Files
