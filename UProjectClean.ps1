@@ -29,18 +29,20 @@ if (!$PSBoundParameters.ContainsKey('UProjectFile'))
 ###  CLEAN Binaries + Intermediate folders
 ################################################################################
 
-pushd $UProjectDirectory
-
-$TempDirs = Get-ChildItem -Recurse | where {$_.PSIsContainer} `
-    | where {$_.Name -cmatch '^Binaries$' `
-         -or $_.Name -cmatch '^Intermediate$' `
+# All directories at any depth named 'Binaries' or 'Intermediate'
+$TempDirs = Get-ChildItem -Path $UProjectDirectory -Recurse `
+    | where {$_.PSIsContainer `
+        -and ( `
+              ($_.Name -cmatch '^Binaries$') `
+          -or ($_.Name -cmatch '^Intermediate$') `
+        ) `
       }
 
-$TempFiles = Get-ChildItem | where {(!$_.PSIsContainer)`
-    -and ($_.Name -cmatch '\.sln$')`
-    }
-
-popd
+# *.sln files in the root folder
+$TempFiles = Get-ChildItem -Path $UProjectDirectory `
+    | where {(!$_.PSIsContainer) `
+        -and ($_.Name -cmatch '\.sln$') `
+      }
 
 foreach ($TempDir in $TempDirs)
 {
