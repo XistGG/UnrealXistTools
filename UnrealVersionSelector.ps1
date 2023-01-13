@@ -26,6 +26,13 @@ param(
     [Parameter(ValueFromRemainingArguments=$true)] $VarArgs
 )
 
+# Resolve optional $UProjectFile parameter
+# (throw if no valid $UProjectFile)
+#   - Set $UProjectFile
+#   - Set $UProjectDirectory
+#
+. $PSScriptRoot\UProjectFile.ps1
+
 $ScriptName = $MyInvocation.MyCommand.Name
 
 
@@ -49,46 +56,52 @@ function IsUnrealVersionSelectorValid
 }
 
 
-# If there isn't already a known Unreal Version Selector
-if (!(&IsUnrealVersionSelectorValid $UnrealVersionSelector))
+# Search the Windows Registry to find the Epic Games Launcher version
+# For more info: https://x157.github.io/UE5/Windows-Registry-Keys#UVS
+#
+function GetUnrealVersionSelectorFromRegistry
 {
-    # Search the Windows Registry to find the Epic Games Launcher version
-    $RegistryItem = Get-ItemProperty "Registry::HKEY_CLASSES_ROOT\Unreal.ProjectFile\shell\open\command" 2> $null
+    $RegistryKey = "HKEY_CLASSES_ROOT\Unreal.ProjectFile\shell\open\command"
+    $RegistryItem = Get-ItemProperty "Registry::$RegistryKey" 2> $null
+
     if (!$RegistryItem)
     {
-        throw "Unreal.ProjectFile Registry Keys NOT FOUND! You must set the UnrealVersionSelector environment variable"
+        return $null
     }
 
     # Parse the default command line to get the location of Unreal Version Selector
     $RegistryCommand = $RegistryItem.'(default)'
+
+    # If the first string is double-quoted, read between the quotes
     if ($RegistryCommand -cmatch '^\s*"([^"]+)"')
     {
-        $UnrealVersionSelector = $Matches[1]
+        return $Matches[1]
     }
-    else
+
+    # If the first string is single-quoted, read between the quotes
+    if ($RegistryCommand -cmatch "^\s*'([^']+)'")
     {
-        $UnrealVersionSelector = ($RegistryCommand -split ' ')[0]
+        return $Matches[1]
     }
+
+    # No quotes, return the first word
+    return ($RegistryCommand -split ' ')[0]
+}
+
+
+# If there isn't already a known Unreal Version Selector
+if (!(&IsUnrealVersionSelectorValid $UnrealVersionSelector))
+{
+    # Try to read UVS location from the Windows Registry
+    $UnrealVersionSelector = &GetUnrealVersionSelectorFromRegistry
 
     # If there is still no valid Unreal Version Selector, that's a fatal error
     if (!(&IsUnrealVersionSelectorValid $UnrealVersionSelector))
     {
-        # We needed to parse the registry to find Unreal Version Selector, but the value was unexpected
-        throw "Failed to parse Registry Value: $RegistryCommand"
+        # Unable to read UnrealVersionSelector location from Registry
+        throw "Unknown UnrealVersionSelector location; if Mac or Linux, please add your platform auto-detect here and submit a PR on Github, I will gladly accept cross-platform support"
     }
 }
-
-
-################################################################################
-###  Expand $UProjectFile argument into absolute path of a UProject
-################################################################################
-
-# If user didn't specify a project file, default to current directory
-if (!$PSBoundParameters.ContainsKey('UProjectFile'))
-{
-    $UProjectFile = '.'
-}
-. $PSScriptRoot\UProjectFile.ps1
 
 
 ################################################################################
