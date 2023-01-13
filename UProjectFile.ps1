@@ -22,9 +22,15 @@
 # $UProjectDirectory = absolute path to MyGame.uproject parent directory
 #
 
-if ($UProjectFile -eq '')
+if (!$UProjectFile)  # if $null, '' or any other empty value
 {
-    $UProjectFile = '.'
+    # Default implicit $UProjectFile location is current directory
+    $UProjectFile = Get-Location
+
+    if (!$Quiet)
+    {
+        Write-Host "Auto-selecting project in directory: $(Get-Location)"
+    }
 }
 
 # Try to get information about the UProject (file or directory)
@@ -38,7 +44,7 @@ if (!$UProjectItem.Exists)
 # First check of $UProjectFile is a file
 if (!$UProjectItem.PSIsContainer)
 {
-    if ($UProjectItem.Name -cmatch '\.uproject$')
+    if ($UProjectItem.Extension -ieq '.uproject')
     {
         # Expand this file to its absolute path
         $UProjectFile = $UProjectItem.FullName
@@ -50,16 +56,16 @@ if (!$UProjectItem.PSIsContainer)
 }
 else
 {
-    # $UProjectFile is a directory.
-
-    # $UProjectFile is a directory with 0+ .uproject files
+    # $UProjectItem is a directory with 0+ .uproject files
     #
     #     like "MyGame/MyGame.uproject"
     #       or "MyGame/Other.uproject"
     #       or "MyGame/YetAnother.uproject"
 
+    # Find all .uproject files in the directory
+
     $TempProjects = Get-ChildItem -Path $UProjectItem.FullName `
-        | where {(!$_.PSIsContainer) -and ($_.Name -cmatch '\.uproject$') }
+        | Where-Object {!$_.PSIsContainer -and ($_.Extension -ieq '.uproject') }
 
     if ($TempProjects.count -eq 1)
     {
