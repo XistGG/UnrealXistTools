@@ -7,58 +7,69 @@
 #
 #   - Remove Binaries dirs
 #   - Remove Intermediate dirs
+#   - Remove DerivedDataCache dirs (only if -ResetDDC switch)
+#   - Remove *.sln files from the project root
 #   - Generate Project Files
 #
 
 [CmdletBinding()]
 param(
-    [switch]$Quiet,
+    [switch]$ResetDDC,
     [Parameter()] $UProjectFile
 )
 
 
-# If user didn't specify a project file, default to current directory
-if (!$PSBoundParameters.ContainsKey('UProjectFile'))
-{
-    $UProjectFile = '.'
-}
+# Resolve optional $UProjectFile parameter
+# (throw if no valid $UProjectFile)
+#   - Set $UProjectFile
+#   - Set $UProjectDirectory
+#
 . $PSScriptRoot\UProjectFile.ps1
 
 
 ################################################################################
-###  CLEAN Binaries + Intermediate folders
+###  Find Binaries + Intermediate + other temporary files
 ################################################################################
 
+Write-Host "Scanning files & directories..."
+
 # All directories at any depth named 'Binaries' or 'Intermediate'
+# Include DerivedDataCache directories only if you set -ResetDDC parameter
+#
 $TempDirs = Get-ChildItem -Path $UProjectDirectory -Recurse `
-    | where {$_.PSIsContainer `
-        -and ( `
-              ($_.Name -cmatch '^Binaries$') `
-          -or ($_.Name -cmatch '^Intermediate$') `
+    | Where-Object {$_.PSIsContainer `
+        -and (($_.Name -ieq 'Binaries') `
+          -or ($_.Name -ieq 'Intermediate') `
+          -or (($_.Name -ieq 'DerivedDataCache') -and $ResetDDC) `
         ) `
       }
 
 # *.sln files in the root folder
 $TempFiles = Get-ChildItem -Path $UProjectDirectory `
-    | where {(!$_.PSIsContainer) `
-        -and ($_.Name -cmatch '\.sln$') `
-      }
+    | Where-Object {!$_.PSIsContainer -and ($_.Extension -ieq '.sln')}
 
-foreach ($TempDir in $TempDirs)
-{
-    Write-Host "[-] $TempDir"
-    Remove-Item -Force -Recurse $TempDir
-}
 
-foreach ($TempFile in $TempFiles)
-{
-    Write-Host "[-] $TempFile"
-    Remove-Item -Force $TempFile
-}
+################################################################################
+###  DELETE Binaries + Intermediate + other temporary files
+################################################################################
 
-# If we output any deletes, add whitespace line after
+# If there is stuff to delete, then delete it
 if (($TempDirs.count + $TempFiles.count) -gt 0)
 {
+    Write-Host "Deleting generated data..."
+
+    foreach ($TempDir in $TempDirs)
+    {
+        Write-Host "[-] $TempDir"
+        Remove-Item -Force -Recurse $TempDir
+    }
+
+    foreach ($TempFile in $TempFiles)
+    {
+        Write-Host "[-] $TempFile"
+        Remove-Item -Force $TempFile
+    }
+
     Write-Host ""
 }
 
