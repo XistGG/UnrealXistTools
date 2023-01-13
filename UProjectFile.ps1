@@ -45,33 +45,68 @@ if (!$UProjectItem.PSIsContainer)
     }
     else
     {
-        throw "File is not a UProject: $UProjectFile"
+        throw "File is not a .uproject: $UProjectFile"
     }
 }
 else
 {
     # $UProjectFile is a directory.
 
-    # Check if it is a directory with a uproject inside it,
-    #     like "Foo" => "Foo/Foo.uproject"
-    #       or "."   => "Whatever/Whatever.uproject"
+    # $UProjectFile is a directory with 0+ .uproject files
+    #
+    #     like "MyGame/MyGame.uproject"
+    #       or "MyGame/Other.uproject"
+    #       or "MyGame/YetAnother.uproject"
 
-    $Name = $UProjectItem.Name
-    $File = Join-Path -Path $UProjectItem.FullName -ChildPath "${Name}.uproject"
+    $TempProjects = Get-ChildItem -Path $UProjectItem.FullName `
+        | where {(!$_.PSIsContainer) -and ($_.Name -cmatch '\.uproject$') }
 
-    $UProjectItem = Get-Item -Path $File 2> $null
-
-    if ($UProjectItem.Exists -and !($UProjectItem.PSIsContainer))
+    if ($TempProjects.count -eq 1)
     {
-        $UProjectFile = $File
+        # Found exactly 1 .uproject file, use it
+        $UProjectItem = $TempProjects[0]
     }
-    else
+    elseif ($TempProjects.count -gt 1)
     {
-        throw "No such file ${Name}.uproject in directory: $UProjectFile"
+        # $UProjectFile is a directory with multiple .uproject files
+
+        $FoundUProject = $false
+
+        # Search for a project file with the same name as the directory
+        foreach ($ProjectFile in $TempProjects)
+        {
+            if ($UProjectItem.Name -ieq $ProjectFile.BaseName)
+            {
+                # Found it (example "Foo/Foo.uproject")
+                $UProjectItem = $ProjectFile
+                $FoundUProject = $true
+                break;
+            }
+        }
+
+        # If we still don't know which .uproject to start, error
+        # User needs to tell us explicitly.
+
+        if (!$FoundUProject)
+        {
+            foreach ($ProjectFile in $TempProjects)
+            {
+                Write-Warning "Ambiguous .uproject: $ProjectFile"
+            }
+
+            Write-Error "Cannot auto-select a .uproject file in a directory with multiple .uproject; You must specify which .uproject to use for this directory"
+            throw "Explicit uproject required for directory: $UProjectItem"
+        }
+    }
+    else # $TempProjects.count -lte 0
+    {
+        # $UProjectFile is a directory without any .uproject files
+        throw "Not an Unreal Engine project directory; no .uproject files in: $UProjectItem"
     }
 }
 
 
+$UProjectFile = $UProjectItem.FullName
 $UProjectDirectory = $UProjectItem.Directory.FullName
 
 
