@@ -19,10 +19,9 @@ Main Branch: https://github.com/XistGG/UnrealXistTools/
 - [UProjectClean.ps1](#uprojectcleanps1)
   - Completely Clean/Reset Repo/Depot
   - Removes all generated C++ Build files
-- [UnrealVersionSelector.ps1](#unrealversionselectorps1)
   - Regenerate Project Files
-  - Unreal Editor Project
-  - Play Game Project
+- [UnrealVersionSelector.ps1](#unrealversionselectorps1)
+  - Easy-to-use interface to Epic's UnrealVersionSelector.exe
 
 
 # UProjectClean.ps1
@@ -34,16 +33,16 @@ Main Branch: https://github.com/XistGG/UnrealXistTools/
 
 ### Usage Examples
 
-Clean `MyGame.uproject`:
-
-```powershell
-UProjectClean.ps1 MyGame.uproject
-```
-
 Clean the project in the current directory:
 
 ```powershell
 UProjectClean.ps1
+```
+
+Clean a specific `MyGame.uproject`:
+
+```powershell
+UProjectClean.ps1 MyGame.uproject
 ```
 
 
@@ -51,33 +50,36 @@ UProjectClean.ps1
 
 - Allows developer to refer to `.uproject` files via relative paths
 - Infers the name of `.uproject` files based on current directory
-- Executes Epic's UnrealVersionSelector.exe for base functionality
+- Executes Epic's `UnrealVersionSelector.exe` for base functionality
 
 
 ### Usage Examples
 
-Generate project files for `MyGame.uproject`:
+#### Generate project files
 
 ```powershell
-UnrealVersionSelector.ps1 -projectfiles MyGame.uproject
+UnrealVersionSelector.ps1 -projectfiles
 ```
 
-Choose which Engine to use for `MyGame.uproject`:
+#### Choose which Engine to use
 
 ```powershell
-UnrealVersionSelector.ps1 -switchversion MyGame.uproject
+UnrealVersionSelector.ps1 -switchversion
 ```
 
-Start Unreal Editor with `MyGame.uproject`:
+#### Start Unreal Editor
 
 ```powershell
-UnrealVersionSelector.ps1 -editor MyGame.uproject
+UnrealVersionSelector.ps1 -editor
 ```
 
-Start Game `MyGame.uproject`:
+#### Start Game
 
 ```powershell
-UnrealVersionSelector.ps1 -game MyGame.uproject
+UnrealVersionSelector.ps1 -game
 ```
+
+
+### Help
 
 For more info see `UnrealVersionSelector.ps1 -help`
