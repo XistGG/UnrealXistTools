@@ -14,6 +14,7 @@
 
 [CmdletBinding()]
 param(
+    [switch]$DryRun,
     [switch]$ResetDDC,
     [Parameter()] $UProjectFile
 )
@@ -61,13 +62,19 @@ if (($TempDirs.count + $TempFiles.count) -gt 0)
     foreach ($TempDir in $TempDirs)
     {
         Write-Host "[-] $TempDir"
-        Remove-Item -Force -Recurse $TempDir
+        if (!$DryRun)
+        {
+            Remove-Item -Force -Recurse $TempDir
+        }
     }
 
     foreach ($TempFile in $TempFiles)
     {
         Write-Host "[-] $TempFile"
-        Remove-Item -Force $TempFile
+        if (!$DryRun)
+        {
+            Remove-Item -Force $TempFile
+        }
     }
 
     Write-Host ""
@@ -77,5 +84,11 @@ if (($TempDirs.count + $TempFiles.count) -gt 0)
 ################################################################################
 ###  Generate Project Files
 ################################################################################
+
+if ($DryRun)
+{
+    Write-Warning "Exiting without generating project files due to -DryRun"
+    exit 151
+}
 
 . $PSScriptRoot\UnrealVersionSelector.ps1 -quiet -projectfiles $UProjectFile
