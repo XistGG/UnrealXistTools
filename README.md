@@ -20,12 +20,16 @@ Main Branch: https://github.com/XistGG/UnrealXistTools/
   - Completely Clean/Reset Repo/Depot
   - Removes all generated C++ Build files
 - [UnrealVersionSelector.ps1](#unrealversionselectorps1)
+  - Regenerate Project Files
+  - Unreal Editor Project
+  - Play Game Project
 
 
 # UProjectClean.ps1
 
 - Delete all `Binaries` (generated data)
 - Delete all `Intermediate` (generated data)
+- Delete all `*.sln` (generated data)
 - Generate Project Files
 
 ### Usage Examples
@@ -38,8 +42,6 @@ UProjectClean.ps1 MyGame.uproject
 
 Clean the project in the current directory:
 
-*(requires the directory name to match the uproject name, like `Foo/Foo.uproject`)*
-
 ```powershell
 UProjectClean.ps1
 ```
@@ -47,9 +49,10 @@ UProjectClean.ps1
 
 # UnrealVersionSelector.ps1
 
-- Find and execute Epic Launcher version of `UnrealVersionSelector`
-  - Allow dev to use relative paths
-  - Send absolute paths to Epic UVS, which requires them
+- Allows developer to refer to `.uproject` files via relative paths
+- Infers the name of `.uproject` files based on current directory
+- Executes Epic's UnrealVersionSelector.exe for base functionality
+
 
 ### Usage Examples
 
