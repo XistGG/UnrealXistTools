@@ -36,6 +36,10 @@ $TempDirs = Get-ChildItem -Recurse | where {$_.PSIsContainer} `
          -or $_.Name -cmatch '^Intermediate$' `
       }
 
+$TempFiles = Get-ChildItem | where {(!$_.PSIsContainer)`
+    -and ($_.Name -cmatch '\.sln$')`
+    }
+
 popd
 
 foreach ($TempDir in $TempDirs)
@@ -44,8 +48,14 @@ foreach ($TempDir in $TempDirs)
     Remove-Item -Force -Recurse $TempDir
 }
 
-# If we output a bunch of deleted directories, add whitespace line after
-if ($TempDirs.count -gt 0)
+foreach ($TempFile in $TempFiles)
+{
+    Write-Host "[-] $TempFile"
+    Remove-Item -Force $TempFile
+}
+
+# If we output any deletes, add whitespace line after
+if (($TempDirs.count + $TempFiles.count) -gt 0)
 {
     Write-Host ""
 }
