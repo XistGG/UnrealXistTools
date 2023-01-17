@@ -67,7 +67,7 @@ if (($TempDirs.count + $TempFiles.count) -gt 0)
         Write-Host "[-] $TempDir"
         if (!$DryRun)
         {
-            Remove-Item -Force -Recurse $TempDir
+            Remove-Item -Force -Recurse -Path $TempDir.FullName
         }
     }
 
@@ -76,7 +76,7 @@ if (($TempDirs.count + $TempFiles.count) -gt 0)
         Write-Host "[-] $TempFile"
         if (!$DryRun)
         {
-            Remove-Item -Force $TempFile
+            Remove-Item -Force -Path $TempFile.FullName
         }
     }
 
