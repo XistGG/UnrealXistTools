@@ -64,19 +64,31 @@ if (($TempDirs.count + $TempFiles.count) -gt 0)
 
     foreach ($TempDir in $TempDirs)
     {
-        Write-Host "[-] $TempDir"
-        if (!$DryRun)
+        # If the temp dir still exists, delete it
+        # (handles nested paths that were previously deleted this run)
+        if (Test-Path -Path $TempDir.FullName)
         {
-            Remove-Item -Force -Recurse -Path $TempDir.FullName
+            Write-Host "[-] $TempDir"
+
+            if (!$DryRun)
+            {
+                Remove-Item -Force -Recurse -Path $TempDir.FullName
+            }
         }
     }
 
     foreach ($TempFile in $TempFiles)
     {
-        Write-Host "[-] $TempFile"
-        if (!$DryRun)
+        # If the temp file still exists, delete it
+        # (handles nested paths that were previously deleted this run)
+        if (Test-Path -Path $TempFile.FullName)
         {
-            Remove-Item -Force -Path $TempFile.FullName
+            Write-Host "[-] $TempFile"
+
+            if (!$DryRun)
+            {
+                Remove-Item -Force -Path $TempFile.FullName
+            }
         }
     }
 
