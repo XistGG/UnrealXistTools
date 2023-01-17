@@ -58,25 +58,19 @@ UProjectClean.ps1 MyGame.uproject
 #### Generate project files
 
 ```powershell
-UnrealVersionSelector.ps1 -projectfiles
+UnrealVersionSelector.ps1 -ProjectFiles
 ```
 
 #### Choose which Engine to use
 
 ```powershell
-UnrealVersionSelector.ps1 -switchversion
+UnrealVersionSelector.ps1 -SwitchVersion
 ```
 
-#### Start Unreal Editor
+##### Choose a Specific Engine
 
 ```powershell
-UnrealVersionSelector.ps1 -editor
-```
-
-#### Start Game
-
-```powershell
-UnrealVersionSelector.ps1 -game
+UnrealVersionSelector.ps1 -SwitchVersionSilent /Project/Root/Engine/Binaries/../..
 ```
 
 
