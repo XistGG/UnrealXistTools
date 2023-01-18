@@ -39,18 +39,17 @@ Write-Host "Scanning files & directories..."
 # All directories at any depth named 'Binaries' or 'Intermediate'
 # Include DerivedDataCache directories only if you set -ResetDDC parameter
 #
-$TempDirs = Get-ChildItem -Path $UProjectDirectory -Recurse `
-    | Where-Object {$_.PSIsContainer `
-        -and (($_.Name -ieq 'Binaries') `
+$TempDirs = Get-ChildItem -Path $UProjectDirectory -Directory -Recurse `
+    | Where-Object { `
+              ($_.Name -ieq 'Binaries') `
           -or ($_.Name -ieq 'Intermediate') `
           -or (($_.Name -ieq 'DerivedDataCache') -and $ResetDDC) `
           -or (($_.Name -ieq '.idea') -and $Idea) `
-        ) `
       }
 
 # *.sln files in the root folder
-$TempFiles = Get-ChildItem -Path $UProjectDirectory `
-    | Where-Object {!$_.PSIsContainer -and ($_.Extension -ieq '.sln')}
+$TempFiles = Get-ChildItem -Path $UProjectDirectory -File `
+    | Where-Object {$_.Extension -ieq '.sln'}
 
 
 ################################################################################
