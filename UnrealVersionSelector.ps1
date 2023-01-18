@@ -44,13 +44,17 @@ $ScriptName = $MyInvocation.MyCommand.Name
 $UnrealVersionSelector = $env:UnrealVersionSelector
 
 
-function IsUnrealVersionSelectorValid
+# Test if the $UVS param is an existing file
+# @return bool
+#
+function IsExistingFile
 {
-    param ([string]$UVS)
-    if ($UVS -ne '')
+    param ([string]$file)
+    if ($file -and ($file -ne ''))
     {
-        #Write-Host "Test Path: '$UVS'"
-        return !!(Test-Path -Path $UVS -PathType Leaf)
+        $b = !!(Test-Path -Path $file -PathType Leaf)
+        Write-Debug "IsExistingFile Test=${b} Path='$file'"
+        return $b
     }
     return $false
 }
@@ -66,11 +70,14 @@ function GetUnrealVersionSelectorFromRegistry
 
     if (!$RegistryItem)
     {
+        Write-Debug "Missing Registry::$RegistryKey"
         return $null
     }
 
     # Parse the default command line to get the location of Unreal Version Selector
     $RegistryCommand = $RegistryItem.'(default)'
+
+    Write-Debug "Read UVS Command from Registry: $RegistryCommand"
 
     # If the first string is double-quoted, read between the quotes
     if ($RegistryCommand -cmatch '^\s*"([^"]+)"')
@@ -89,14 +96,14 @@ function GetUnrealVersionSelectorFromRegistry
 }
 
 
-# If there isn't already a known Unreal Version Selector
-if (!(&IsUnrealVersionSelectorValid $UnrealVersionSelector))
+# If $UnrealVersionSelector is a file that exists on this system
+if (!(&IsExistingFile $UnrealVersionSelector))
 {
     # Try to read UVS location from the Windows Registry
     $UnrealVersionSelector = &GetUnrealVersionSelectorFromRegistry
 
-    # If there is still no valid Unreal Version Selector, that's a fatal error
-    if (!(&IsUnrealVersionSelectorValid $UnrealVersionSelector))
+    # If $UnrealVersionSelector is NOT a valid file
+    if (!(&IsExistingFile $UnrealVersionSelector))
     {
         # Unable to read UnrealVersionSelector location from Registry
         throw "Unknown UnrealVersionSelector location; if Mac or Linux, please add your platform auto-detect here and submit a PR on Github, I will gladly accept cross-platform support"
@@ -115,7 +122,7 @@ if ($SwitchVersionSilent -or $SwitchVersion)
     # Check for that here and throw an explicit exception unless -force is specified,
     # in which case forcefully remove the read only bit from the uproject file.
 
-    if ((Get-ChildItem $UProjectFile).IsReadOnly)
+    if ($UProjectItem.IsReadOnly)
     {
         if (!$Force)
         {
@@ -123,7 +130,7 @@ if ($SwitchVersionSilent -or $SwitchVersion)
         }
 
         # -force flag is set; explicitly make $UProjectFile writable
-        (Get-ChildItem $UProjectFile).IsReadOnly = $false
+        $UProjectItem.IsReadOnly = $false
 
         # Print a warning message so it's obvious we did this
         Write-Warning "-force removed read only attribute from $UProjectFile"
@@ -167,12 +174,12 @@ elseif ($ProjectFiles)
 elseif ($Editor)
 {
     Write-Host "EXEC: $UnrealVersionSelector -editor $UProjectFile"
-    $process = Start-Process -PassThru -FilePath $UnrealVersionSelector -ArgumentList "-editor",$UProjectFile -WorkingDirectory $UProjectDirectory
+    $process = Start-Process -PassThru -FilePath $UnrealVersionSelector -ArgumentList "-editor",$UProjectFile
 }
 elseif ($Game)
 {
     Write-Host "EXEC: $UnrealVersionSelector -game $UProjectFile"
-    $process = Start-Process -PassThru -FilePath $UnrealVersionSelector -ArgumentList "-game",$UProjectFile -WorkingDirectory $UProjectDirectory
+    $process = Start-Process -PassThru -FilePath $UnrealVersionSelector -ArgumentList "-game",$UProjectFile
 }
 
 
@@ -183,16 +190,17 @@ if ($process)
     Wait-Process -InputObject $process
     $e = $process.ExitCode
 
-    if ($e -ne 0)
+    if ($e -eq 0)
     {
-        Write-Warning "Exit Code $e"
+        Write-Debug "Exec Success"
+        Write-Host ""
     }
     else
     {
-        Write-Host "Exit Code $e"
+        Write-Warning "Exit Code $e"
+        Write-Error "$UnrealVersionSelector failed"
     }
 
-    Write-Host ""
     exit $e
 }
 
@@ -207,28 +215,11 @@ Build Usages:
 
     Usage: $ScriptName -projectfiles MyGame.uproject
     Usage: $ScriptName -switchversion MyGame.uproject [-force]
-    Usage: $ScriptName -switchversionsilent MyGame.uproject /path/to/EngineRoot [-force]
+    Usage: $ScriptName -switchversionsilent MyGame.uproject /path/to/root/Engine/Binaries/../.. [-force]
 
 Play Usages:
 
     Usage: $ScriptName -editor MyGame.uproject
     Usage: $ScriptName -game MyGame.uproject
-
-You can sometimes omit "MyGame.uproject" from the command-line.
-It is optional if the Project Directory is named the same as the
-uproject name.  For example these project folders will work
-without having to explicitly specify "MyGame.uproject":
-
-    C:/Path/to/Game/Game.uproject
-               ^^^^ ^^^^
-
-For a project directory like the above "C:/Path/to/Game",
-the following usages will also work:
-
-    cd C:/Path/to/Game
-    $ScriptName -projectfiles
-
-    cd C:/
-    $ScriptName -projectfiles Path/to/Game
 
 '@
