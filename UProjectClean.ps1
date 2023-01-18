@@ -52,6 +52,7 @@ $TempFiles = Get-ChildItem -Path $UProjectDirectory -File `
     | Where-Object {$_.Extension -ieq '.sln'}
 
 
+Write-Host ""
 ################################################################################
 ###  DELETE Binaries + Intermediate + other temporary files
 ################################################################################
@@ -105,4 +106,4 @@ if ($DryRun)
     exit 151
 }
 
-. $PSScriptRoot\UnrealVersionSelector.ps1 -quiet -projectfiles $UProjectFile
+. $PSScriptRoot\UnrealVersionSelector.ps1 -Quiet -ProjectFiles $UProjectFile
