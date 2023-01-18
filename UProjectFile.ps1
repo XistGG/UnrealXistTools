@@ -64,8 +64,8 @@ else
 
     # Find all .uproject files in the directory
 
-    $TempProjects = Get-ChildItem -Path $UProjectItem.FullName `
-        | Where-Object {!$_.PSIsContainer -and ($_.Extension -ieq '.uproject') }
+    $TempProjects = Get-ChildItem -Path $UProjectItem.FullName -File `
+        | Where-Object {$_.Extension -ieq '.uproject'}
 
     if ($TempProjects.count -eq 1)
     {
