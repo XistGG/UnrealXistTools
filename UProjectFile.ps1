@@ -18,8 +18,9 @@
 #
 # If no exception is thrown, these variables will be set:
 #
-# $UProjectFile = absolute path to MyGame.uproject
 # $UProjectDirectory = absolute path to MyGame.uproject parent directory
+# $UProjectFile = absolute path to MyGame.uproject
+# $UProjectItem = Get-Item -Path $UProjectFile
 #
 
 if (!$UProjectFile)  # if $null, '' or any other empty value
