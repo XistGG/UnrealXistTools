@@ -23,78 +23,54 @@
 # $UProjectItem = Get-Item -Path $UProjectFile
 #
 
-if (!$UProjectFile)  # if $null, '' or any other empty value
+[CmdletBinding()]
+param(
+    [switch]$Quiet,
+    [Parameter()]$UProjectFile
+)
+
+
+function FindUProjectInDirectory()
 {
-    # Default implicit $UProjectFile location is current directory
-    $UProjectFile = Get-Location
+    param(
+        [string]$ProjectName,
+        [string]$Directory
+    )
 
-    if (!$Quiet)
-    {
-        Write-Host "Auto-selecting project in directory: $(Get-Location)"
-    }
-}
-
-# Try to get information about the UProject (file or directory)
-$UProjectItem = Get-Item -Path $UProjectFile 2> $null
-
-if (!$UProjectItem.Exists)
-{
-    throw "No such UProject file or directory: $UProjectFile"
-}
-
-# First check of $UProjectFile is a file
-if (!$UProjectItem.PSIsContainer)
-{
-    if ($UProjectItem.Extension -ieq '.uproject')
-    {
-        # Expand this file to its absolute path
-        $UProjectFile = $UProjectItem.FullName
-    }
-    else
-    {
-        throw "File is not a .uproject: $UProjectFile"
-    }
-}
-else
-{
-    # $UProjectItem is a directory with 0+ .uproject files
-    #
-    #     like "MyGame/MyGame.uproject"
-    #       or "MyGame/Other.uproject"
-    #       or "MyGame/YetAnother.uproject"
-
-    # Find all .uproject files in the directory
-
-    $TempProjects = Get-ChildItem -Path $UProjectItem.FullName -File `
+    $Result = $null
+    $TempProjects = Get-ChildItem -Path $Directory -File `
         | Where-Object {$_.Extension -ieq '.uproject'}
 
     if ($TempProjects.count -eq 1)
     {
         # Found exactly 1 .uproject file, use it
-        $UProjectItem = $TempProjects[0]
+        $Result = $TempProjects[0]
+
+        Write-Debug "Found 1 .uproject in $Directory, using it: $Result"
     }
     elseif ($TempProjects.count -gt 1)
     {
         # $UProjectFile is a directory with multiple .uproject files
 
-        $FoundUProject = $false
-
         # Search for a project file with the same name as the directory
         foreach ($ProjectFile in $TempProjects)
         {
-            if ($UProjectItem.Name -ieq $ProjectFile.BaseName)
+            if ($ProjectName -ieq $ProjectFile.BaseName)
             {
                 # Found it (example "Foo/Foo.uproject")
-                $UProjectItem = $ProjectFile
-                $FoundUProject = $true
-                break;
+                $Result = $ProjectFile
+                Write-Debug "Compare '$ProjectName' -ieq '$($ProjectFile.BaseName)' == TRUE"
+            }
+            else
+            {
+                Write-Debug "Compare '$ProjectName' -ieq '$($ProjectFile.BaseName)' == false"
             }
         }
 
-        # If we still don't know which .uproject to start, error
+        # If we still don't know which .uproject to start, error.
         # User needs to tell us explicitly.
 
-        if (!$FoundUProject)
+        if (!$Result)
         {
             foreach ($ProjectFile in $TempProjects)
             {
@@ -102,25 +78,69 @@ else
             }
 
             Write-Error "Cannot auto-select a .uproject file in a directory with multiple .uproject; You must specify which .uproject to use for this directory"
-            throw "Explicit uproject required for directory: $UProjectItem"
+            throw "Explicit uproject required for directory: $Directory"
         }
+
+        Write-Debug "Found 2+ .uproject in $Directory, using: $Result"
     }
     else # $TempProjects.count -lte 0
     {
         # $UProjectFile is a directory without any .uproject files
-        throw "Not an Unreal Engine project directory; no .uproject files in: $UProjectItem"
+        throw "Not an Unreal Engine project directory; no .uproject files in: $Directory"
     }
+
+    return $Result
+}
+
+
+
+################################################################################
+##  Main
+################################################################################
+
+if (!$UProjectFile)  # if $null, '' or any other empty value
+{
+    # Default implicit $UProjectFile location is current directory
+    $UProjectFile = Get-Location
+
+    Write-Debug "Auto-selecting project in directory: $(Get-Location)"
+}
+
+# Try to get information about the UProject (file or directory)
+$UProjectItem = Get-Item -Path $UProjectFile 2> $null
+
+if (!$UProjectItem -or !$UProjectItem.Exists)
+{
+    throw "No such UProject file or directory: $UProjectFile"
+}
+
+# First check of $UProjectFile is a file
+if (!$UProjectItem.PSIsContainer)
+{
+    # $UProjectItem is a file; make sure it has a .uproject extension
+    if (!($UProjectItem.Extension -ieq '.uproject'))
+    {
+        throw "File is not a .uproject: $UProjectFile"
+    }
+
+    Write-Debug "UProjectFile is a .uproject file; using it: $($UProjectItem.FullName)"
+}
+else
+{
+    # $UProjectItem is a directory, try to find the correct .uproject to use
+    $UProjectItem = &FindUProjectInDirectory -ProjectName $UProjectItem.Name -Directory $UProjectItem.FullName
+    # We expect an exception will already have been thrown when !$UProjectItem,
+    # but just to drive this point, here it is explicitly:
+    if (!$UProjectItem) { throw "UProjectItem is null" };
 }
 
 
 $UProjectFile = $UProjectItem.FullName
-$UProjectDirectory = $UProjectItem.Directory.FullName
+$UProjectDirectory = $UProjectItem.Directory
 
 
 if (!$Quiet)
 {
-    Write-Host ""
     Write-Host "UProjectFile=$UProjectFile"
     Write-Host "UProjectDirectory=$UProjectDirectory"
-    Write-Host ""
 }
