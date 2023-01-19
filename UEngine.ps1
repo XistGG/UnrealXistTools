@@ -1,7 +1,9 @@
 #
 # UEngine.ps1
 #
-#   Allows you to select an Engine Build based on the Registry.
+#   UEngine.ps1 allows you to select an Engine Build based on the Registry.
+#   If you have only 1 custom engine, it uses that as the default.  Otherwise
+#   you can select different engines based on their names.
 #
 #   -List will show you the list of builds
 #   -Help for more info
@@ -19,9 +21,15 @@ param(
     [Parameter()]$UEngineName
 )
 
+# UEngine.ps1 reads this key to discover custom Engine Builds
+#
+# Epic Games Launcher tools manage this registry key:
 $UEngineBuildsRegistryKey = "HKEY_CURRENT_USER\Software\Epic Games\Unreal Engine\Builds"
 
 
+# Read $UEngineBuildsRegistryKey to discover the list of Engine Builds
+# @return $null, or the Registry Item if found
+#
 function ListEngineBuildsInRegistry()
 {
     param(
@@ -42,6 +50,9 @@ function ListEngineBuildsInRegistry()
     return $RegistryBuilds
 }
 
+
+# Write-Host the current contents of $UEngineBuildsRegistryKey
+#
 function WriteHostEngineBuildRegistry()
 {
     $EngineBuilds = &ListEngineBuildsInRegistry $UEngineBuildsRegistryKey
@@ -59,8 +70,6 @@ function WriteHostEngineBuildRegistry()
 
             Write-Host "  [$i] $Property = '$Value'"
         }
-
-        Write-Host ""
     }
 }
 
@@ -94,16 +103,24 @@ function SelectEngineRootByRegistry()
 
                 Write-Debug "$Property matches -Engine; select result [$i]"
             }
-            elseif (!$EngineName -and ($EngineBuilds.Length -eq 1) -and !$NoDefault)
+            elseif (!$EngineName -and ($EngineBuilds.Length -eq 1))
             {
                 # - There is no explicit $EngineName Search
                 # - There is exactly 1 registered Engine Build
-                # - The -NoDefault switch is not set
 
-                # Select this, the only registered Engine Build, as the default result
-                $Result = @{Name=$Property; Root=$Value}
+                if ($NoDefault)
+                {
+                    # - The -NoDefault switch is set
+                    Write-Debug "$Property is only Engine but -NoDefault is set; DO NOT use as default"
+                }
+                else
+                {
+                    # - The -NoDefault switch is not set
+                    # Select this, the only registered Engine Build, as the default result
+                    $Result = @{Name=$Property; Root=$Value}
 
-                Write-Debug "$Property matches -Engine; select result [$i]"
+                    Write-Debug "$Property is the only engine, use as default result [$i]"
+                }
             }
         }
     }
