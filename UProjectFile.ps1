@@ -3,30 +3,23 @@
 #
 # See: https://github.com/XistGG/UnrealXistTools/
 #
-# This is an include file.  It takes an optionally set
-# $UProjectFile value and expands it to an actual MyGame.uproject
-# file location.
+# This takes an optional $Path value and expands it to an actual
+# MyGame.uproject file location.
 #
-# The value you pass in can be:
-#
-# (empty) -> '.'
-# '../MyGame.uproject'
-# '../MyGame' # (same as '../MyGame/MyGame.uproject')
-#
-# If the passed in value does not expand to a valid uproject file,
+# If $Path does not expand to a valid .uproject file,
 # an exception is thrown.
 #
 # If no exception is thrown, these variables will be set:
 #
-# $UProjectDirectory = absolute path to MyGame.uproject parent directory
-# $UProjectFile = absolute path to MyGame.uproject
-# $UProjectItem = Get-Item -Path $UProjectFile
+# $UProjectDirectory = the absolute path to MyGame.uproject parent directory
+# $UProjectFile      = the absolute path to MyGame.uproject
+# $UProjectFileItem  = Get-Item -Path $UProjectFile
 #
 
 [CmdletBinding()]
 param(
     [switch]$Quiet,
-    [Parameter()]$UProjectFile
+    [Parameter()]$Path
 )
 
 
@@ -98,45 +91,46 @@ function FindUProjectInDirectory()
 ##  Main
 ################################################################################
 
-if (!$UProjectFile)  # if $null, '' or any other empty value
+if (!$Path)  # if $null, '' or any other empty value
 {
-    # Default implicit $UProjectFile location is current directory
-    $UProjectFile = Get-Location
+    # Default implicit $Path is current directory
+    $Path = Get-Location
 
-    Write-Debug "Auto-selecting project in directory: $(Get-Location)"
+    Write-Debug "Auto-selecting current directory Path: $Path"
 }
 
 # Try to get information about the UProject (file or directory)
-$UProjectItem = Get-Item -Path $UProjectFile 2> $null
+$UProjectFileItem = Get-Item -Path $Path 2> $null
 
-if (!$UProjectItem -or !$UProjectItem.Exists)
+if (!$UProjectFileItem -or !$UProjectFileItem.Exists)
 {
-    throw "No such UProject file or directory: $UProjectFile"
+    throw "No such UProject file or directory: $Path"
 }
 
 # First check of $UProjectFile is a file
-if (!$UProjectItem.PSIsContainer)
+if (!$UProjectFileItem.PSIsContainer)
 {
-    # $UProjectItem is a file; make sure it has a .uproject extension
-    if (!($UProjectItem.Extension -ieq '.uproject'))
+    # $UProjectFileItem is a file; make sure it has a .uproject extension
+    if (!($UProjectFileItem.Extension -ieq '.uproject'))
     {
-        throw "File is not a .uproject: $UProjectFile"
+        throw "File is not a .uproject: $Path"
     }
 
-    Write-Debug "UProjectFile is a .uproject file; using it: $($UProjectItem.FullName)"
+    Write-Debug "UProjectFile is a .uproject file; using it: $($UProjectFileItem.FullName)"
 }
 else
 {
-    # $UProjectItem is a directory, try to find the correct .uproject to use
-    $UProjectItem = &FindUProjectInDirectory -ProjectName $UProjectItem.Name -Directory $UProjectItem.FullName
-    # We expect an exception will already have been thrown when !$UProjectItem,
+    # $UProjectFileItem is a directory, try to find the correct .uproject to use
+    $UProjectFileItem = &FindUProjectInDirectory -ProjectName $UProjectFileItem.Name -Directory $UProjectFileItem.FullName
+
+    # We expect an exception will already have been thrown when !$UProjectFileItem,
     # but just to drive this point, here it is explicitly:
-    if (!$UProjectItem) { throw "UProjectItem is null" };
+    if (!$UProjectFileItem) { throw "UProjectItem is null" };
 }
 
 
-$UProjectFile = $UProjectItem.FullName
-$UProjectDirectory = $UProjectItem.Directory
+$UProjectFile = $UProjectFileItem.FullName
+$UProjectDirectory = $UProjectFileItem.Directory
 
 
 if (!$Quiet)

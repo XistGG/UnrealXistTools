@@ -122,7 +122,7 @@ if ($SwitchVersionSilent -or $SwitchVersion)
     # Check for that here and throw an explicit exception unless -force is specified,
     # in which case forcefully remove the read only bit from the uproject file.
 
-    if ($UProjectItem.IsReadOnly)
+    if ($UProjectFileItem.IsReadOnly)
     {
         if (!$Force)
         {
@@ -130,7 +130,7 @@ if ($SwitchVersionSilent -or $SwitchVersion)
         }
 
         # -force flag is set; explicitly make $UProjectFile writable
-        $UProjectItem.IsReadOnly = $false
+        $UProjectFileItem.IsReadOnly = $false
 
         # Print a warning message so it's obvious we did this
         Write-Warning "-force removed read only attribute from $UProjectFile"
