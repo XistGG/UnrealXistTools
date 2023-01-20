@@ -14,33 +14,53 @@
 
 [CmdletBinding()]
 param(
+    [Parameter()]$Name,
     [switch]$Help,
     [switch]$List,
-    [switch]$NoDefault,
-    [switch]$Quiet,
-    [Parameter()]$UEngineName
+    [switch]$NoDefault
 )
 
-# UEngine.ps1 reads this key to discover custom Engine Builds
-#
-# Epic Games Launcher tools manage this registry key:
-$UEngineBuildsRegistryKey = "HKEY_CURRENT_USER\Software\Epic Games\Unreal Engine\Builds"
+$BuildsRegistryKey = "HKEY_CURRENT_USER\Software\Epic Games\Unreal Engine\Builds"
 
 
-# Read $UEngineBuildsRegistryKey to discover the list of Engine Builds
+if ($Help)
+{
+    $ScriptName = $MyInvocation.MyCommand.Name
+    Write-Host @"
+
+############################################################
+##
+##  Usage for ${ScriptName}:
+##
+
+& $ScriptName -List
+
+    Display a list of currently registered engines
+
+& $ScriptName Name
+
+    Select the Name engine
+
+& $ScriptName -NoDefault
+
+    Explicitly disable use of a default Name.
+    Mainly useful for debugging.
+
+"@
+    return $null
+}
+
+
+# Read $BuildsRegistryKey to discover the list of Engine Builds
 # @return $null, or the Registry Item if found
 #
 function ListEngineBuildsInRegistry()
 {
-    param(
-        [string]$RegistryKey
-    )
-
-    $RegistryBuilds = Get-Item "Registry::$RegistryKey"
+    $RegistryBuilds = Get-Item "Registry::$BuildsRegistryKey" 2> $null
 
     if (!$RegistryBuilds)
     {
-        Write-Debug "No Registry Keys Found"
+        Write-Warning "Build Registry Not Found: $BuildsRegistryKey"
     }
     elseif ($RegistryBuilds.Length -eq 0)
     {
@@ -51,39 +71,32 @@ function ListEngineBuildsInRegistry()
 }
 
 
-# Write-Host the current contents of $UEngineBuildsRegistryKey
+# Write-Host the current contents of $BuildsRegistryKey
 #
-function WriteHostEngineBuildRegistry()
+function ListHostEngineBuildRegistry()
 {
-    $EngineBuilds = &ListEngineBuildsInRegistry $UEngineBuildsRegistryKey
+    $Result = @()
+    $EngineBuilds = &ListEngineBuildsInRegistry
 
     if ($EngineBuilds -and ($EngineBuilds.Length -gt 0))
     {
-        Write-Host ""
-        Write-Host "Registered Engines ($($EngineBuilds.Length)):"
-        Write-Host ""
-
         for ($i = 0; $i -lt $EngineBuilds.Length; $i++)
         {
             $Property = $EngineBuilds[$i].Property
-            $Value = Get-ItemPropertyValue -Path "Registry::$UEngineBuildsRegistryKey" -Name $Property
+            $Value = Get-ItemPropertyValue -Path "Registry::$BuildsRegistryKey" -Name $Property
 
-            Write-Host "  [$i] $Property = '$Value'"
+            $Result += @{Name=$Property; Root=$Value}
         }
     }
+
+    return $Result
 }
 
 
 function SelectEngineRootByRegistry()
 {
-    param(
-        [switch]$Quiet,
-        [switch]$NoDefault,
-        [string]$EngineName
-    )
-
     $Result = $null
-    $EngineBuilds = &ListEngineBuildsInRegistry $UEngineBuildsRegistryKey
+    $EngineBuilds = &ListEngineBuildsInRegistry
 
     if ($EngineBuilds -and ($EngineBuilds.Length -gt 0))
     {
@@ -92,20 +105,20 @@ function SelectEngineRootByRegistry()
         for ($i = 0; $i -lt $EngineBuilds.Length; $i++)
         {
             $Property = $EngineBuilds[$i].Property
-            $Value = Get-ItemPropertyValue -Path "Registry::$UEngineBuildsRegistryKey" -Name $Property
+            $Value = Get-ItemPropertyValue -Path "Registry::$BuildsRegistryKey" -Name $Property
 
             Write-Debug "  [$i] $Property = '$Value'"
 
-            if ($EngineName -and ($Property -ieq $EngineName))
+            if ($Name -and ($Property -ieq $Name))
             {
-                # An explicit $EngineName search matched
+                # An explicit $Name search matched
                 $Result = @{Name=$Property; Root=$Value}
 
                 Write-Debug "$Property matches -Engine; select result [$i]"
             }
-            elseif (!$EngineName -and ($EngineBuilds.Length -eq 1))
+            elseif (!$Name -and ($EngineBuilds.Length -eq 1))
             {
-                # - There is no explicit $EngineName Search
+                # - There is no explicit $Name Search
                 # - There is exactly 1 registered Engine Build
 
                 if ($NoDefault)
@@ -129,69 +142,50 @@ function SelectEngineRootByRegistry()
 }
 
 
-# Get/Set the current $UEngine
-
-$UEngine = &SelectEngineRootByRegistry -EngineName:$UEngineName -NoDefault:$NoDefault -Quiet:$Quiet
-
-if ($UEngine)
+# If they didn't supply a specific Engine Name, choose a default Engine if !$NoDefault
+if (!$Name -and !$NoDefault)
 {
-    $UEngineName = $UEngine.Name
-    $UEngineDirectory = Get-Item -Path $UEngine.Root
-}
-else
-{
-    # $UEngineName is invalid; leave it as its invalid value
-    $UEngineDirectory = $null
-}
+    # Select default UProject
+    $UProject = & $PSScriptRoot/UProject.ps1
 
-if ($List)
-{
-    &WriteHostEngineBuildRegistry
-}
-
-if ($UEngine)
-{
-    if (!$Quiet)
+    if ($UProject)
     {
-        Write-Host "UEngineName=$UEngineName"
-        Write-Host "UEngineDirectory=$UEngineDirectory"
+        $Name = $UProject.EngineAssociation
+
+        Write-Debug "Using '$Name' Engine Name for UProject: $UProjectFile"
     }
 }
-elseif ($UEngineName)
+
+
+# If they just want to see a list, show it
+if ($List)
+{
+    $BuildList = &ListHostEngineBuildRegistry
+    return $BuildList
+}
+
+
+# Get/Set the current $UEngine
+
+$UEngine = &SelectEngineRootByRegistry
+
+if ($UEngine)
+{
+    Write-Debug "UEngine = $($UEngine.Name) = $($UEngine.Root)"
+}
+elseif ($Name)
 {
     # User asked for a specific name that does not exist
-    Write-Error "No Such Engine Name: $UEngineName"
+    Write-Error "No Such Engine Name: $Name"
 }
 else
 {
+    Write-Host ""
     Write-Host "No UEngine is selected."
+    Write-Host ""
 
-    Write-Host "Use the -List switch to see the list of all registered Engines."
-    Write-Host "Use the -Engine parameter to specify one of the registered names."
+    # Execute own help and exit
+    return & $PSScriptRoot/UEngine.ps1 -Help
 }
 
-if ($Help)
-{
-    $ScriptName = $MyInvocation.MyCommand.Name
-    Write-Host @"
-
-############################################################
-##
-##  Usage for ${ScriptName}:
-##
-
-& $ScriptName -List
-
-    Display a list of currently registered engines
-
-& $ScriptName EngineName
-
-    Select the EngineName engine
-
-& $ScriptName -NoDefault
-
-    Explicitly disable use of a default EngineName.
-    Mainly useful for debugging.
-
-"@
-}
+return $UEngine
