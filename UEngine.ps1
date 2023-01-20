@@ -84,6 +84,15 @@ function ListHostEngineBuildRegistry()
         for ($i = 0; $i -lt $EngineBuilds.Length; $i++)
         {
             $Property = $EngineBuilds[$i].Property
+
+            # Sometimes the key exists but does not actually contain any properties,
+            # in which case there aren't any engine builds registered
+            if (!$Property)
+            {
+                Write-Debug "Registry key contains empty property at i=$i, ignoring it"
+                continue;
+            }
+
             $Value = Get-ItemPropertyValue -Path "Registry::$BuildsRegistryKey" -Name $Property
 
             $Result += @{Name=$Property; Root=$Value}
@@ -106,6 +115,15 @@ function SelectEngineRootByRegistry()
         for ($i = 0; $i -lt $EngineBuilds.Length; $i++)
         {
             $Property = $EngineBuilds[$i].Property
+
+            # Sometimes the key exists but does not actually contain any properties,
+            # in which case there aren't any engine builds registered
+            if (!$Property)
+            {
+                Write-Debug "Registry key contains empty property at i=$i, ignoring it"
+                continue;
+            }
+
             $Value = Get-ItemPropertyValue -Path "Registry::$BuildsRegistryKey" -Name $Property
 
             Write-Debug "  [$i] $Property = '$Value'"
