@@ -15,6 +15,7 @@
 [CmdletBinding()]
 param(
     [Parameter()]$Name,
+    [Parameter()]$UProject,
     [switch]$Help,
     [switch]$List,
     [switch]$NoDefault
@@ -142,11 +143,21 @@ function SelectEngineRootByRegistry()
 }
 
 
+# If $UProject is set, resolve it
+if ($UProject)
+{
+    $UProject = & $PSScriptRoot/UProject.ps1 -Path:$UProject
+}
+
+
 # If they didn't supply a specific Engine Name, choose a default Engine if !$NoDefault
 if (!$Name -and !$NoDefault)
 {
-    # Select default UProject
-    $UProject = & $PSScriptRoot/UProject.ps1
+    if (!$UProject)
+    {
+        # No $UProject was named, so load the default UProject
+        $UProject = & $PSScriptRoot/UProject.ps1
+    }
 
     if ($UProject)
     {
