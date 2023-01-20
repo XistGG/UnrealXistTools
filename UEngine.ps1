@@ -36,11 +36,12 @@ if ($Help)
 
 & $ScriptName -List
 
-    Display a list of currently registered engines
+    Return a list of currently registered engines as objects like:
+    {Name="foo", Root="C:\Root\"}
 
 & $ScriptName Name
 
-    Select the Name engine
+    Return the Named engine build, returns null if no such Name.
 
 & $ScriptName -NoDefault
 
@@ -58,44 +59,31 @@ if ($Help)
 function ListEngineBuildsInRegistry()
 {
     $RegistryBuilds = Get-Item "Registry::$BuildsRegistryKey" 2> $null
+    $Result = @()
 
     if (!$RegistryBuilds)
     {
         Write-Warning "Build Registry Not Found: $BuildsRegistryKey"
     }
-    elseif ($RegistryBuilds.Length -eq 0)
+    else
     {
-        Write-Debug "Empty Registry Key, no registered Engines found"
-    }
-
-    return $RegistryBuilds
-}
-
-
-# Write-Host the current contents of $BuildsRegistryKey
-#
-function ListHostEngineBuildRegistry()
-{
-    $Result = @()
-    $EngineBuilds = &ListEngineBuildsInRegistry
-
-    if ($EngineBuilds -and ($EngineBuilds.Length -gt 0))
-    {
-        for ($i = 0; $i -lt $EngineBuilds.Length; $i++)
+        for ($i = 0; $i -lt $RegistryBuilds.Length; $i++)
         {
-            $Property = $EngineBuilds[$i].Property
-
-            # Sometimes the key exists but does not actually contain any properties,
-            # in which case there aren't any engine builds registered
-            if (!$Property)
+            $Property = $RegistryBuilds[$i].Property
+            if ($Property)
             {
-                Write-Debug "Registry key contains empty property at i=$i, ignoring it"
-                continue;
+                # This is a non-empty $Property value, so it's a registered engine build
+
+                # Get the ItemPropertyValue for this $Property
+                $Value = Get-ItemPropertyValue -Path "Registry::$BuildsRegistryKey" -Name $Property
+
+                # Add this registered build to the output result
+                $Result += @{Name=$Property; Root=$Value}
             }
-
-            $Value = Get-ItemPropertyValue -Path "Registry::$BuildsRegistryKey" -Name $Property
-
-            $Result += @{Name=$Property; Root=$Value}
+            else
+            {
+                Write-Debug "Skip empty property for RegistryBuilds[$i]"
+            }
         }
     }
 
@@ -161,6 +149,27 @@ function SelectEngineRootByRegistry()
 }
 
 
+################################################################################
+##  Main
+################################################################################
+
+
+# If they just want to see a list, show it
+if ($List)
+{
+    $BuildList = &ListEngineBuildsInRegistry
+    if ($BuildList -and $BuildList.Count -gt 0)
+    {
+        return $BuildList
+    }
+    return $null
+}
+
+
+################################################################################
+##  Resolve Project
+
+
 # If $UProject is set, resolve it
 if ($UProject)
 {
@@ -186,15 +195,9 @@ if (!$Name -and !$NoDefault)
 }
 
 
-# If they just want to see a list, show it
-if ($List)
-{
-    $BuildList = &ListHostEngineBuildRegistry
-    return $BuildList
-}
+################################################################################
+##  Get/Set the current $UEngine
 
-
-# Get/Set the current $UEngine
 
 $UEngine = &SelectEngineRootByRegistry
 
@@ -209,12 +212,13 @@ elseif ($Name)
 }
 else
 {
-    Write-Host ""
-    Write-Host "No UEngine is selected."
-    Write-Host ""
+    # User asked for no name in particular, and no default is in effect,
+    # so there is no $UEngine selected.
 
-    # Execute own help and exit
-    return & $PSScriptRoot/UEngine.ps1 -Help
+    # Execute own help
+    & $PSScriptRoot/UEngine.ps1 -Help
+
+    return $null
 }
 
 return $UEngine
