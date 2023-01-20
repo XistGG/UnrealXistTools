@@ -54,12 +54,12 @@ if ($Help)
 
 
 # Read $BuildsRegistryKey to discover the list of Engine Builds
-# @return $null, or the Registry Item if found
+# @return ArrayList with each element being like @{ Name="EngineName"; Root="C:\Root" }
 #
 function ListEngineBuildsInRegistry()
 {
-    $RegistryBuilds = Get-Item "Registry::$BuildsRegistryKey" 2> $null
-    $Result = @()
+    $RegistryBuilds = Get-Item -Path "Registry::$BuildsRegistryKey" 2> $null
+    $Result = [System.Collections.ArrayList]@()
 
     if (!$RegistryBuilds)
     {
@@ -67,22 +67,40 @@ function ListEngineBuildsInRegistry()
     }
     else
     {
+        # Must iterate to Length; registry key does not have a Count
         for ($i = 0; $i -lt $RegistryBuilds.Length; $i++)
         {
-            $Property = $RegistryBuilds[$i].Property
-            if ($Property)
+            $PropertyList = $RegistryBuilds[$i].Property
+
+            # PropertyList is an actual array, it has a Count
+            if ($PropertyList -and $PropertyList.Count -gt 0)
             {
-                # This is a non-empty $Property value, so it's a registered engine build
+                for ($p = 0; $p -lt $PropertyList.Count; $p++)
+                {
+                    $BuildName = $PropertyList[$p]
 
-                # Get the ItemPropertyValue for this $Property
-                $Value = Get-ItemPropertyValue -Path "Registry::$BuildsRegistryKey" -Name $Property
+                    if ($BuildName)
+                    {
+                        # Get the ItemPropertyValue for this $BuildName
+                        $Value = Get-ItemPropertyValue -Path "Registry::$BuildsRegistryKey" -Name $BuildName
 
-                # Add this registered build to the output result
-                $Result += @{Name=$Property; Root=$Value}
+                        # Create a Build object
+                        $Build = [pscustomobject]@{ Name=$BuildName; Root=$Value }
+
+                        Write-Debug "Read Engine[$($Result.Count)] [$BuildName] = [$Value]"
+
+                        # Append the build to the $Result array
+                        $Result += $Build
+                    }
+                    else
+                    {
+                        Write-Debug "Skip empty BuildName for RegistryBuilds[$i].Property[$p]"
+                    }
+                }
             }
             else
             {
-                Write-Debug "Skip empty property for RegistryBuilds[$i]"
+                Write-Debug "Skip empty PropertyList for RegistryBuilds[$i]"
             }
         }
     }
@@ -96,34 +114,25 @@ function SelectEngineRootByRegistry()
     $Result = $null
     $EngineBuilds = &ListEngineBuildsInRegistry
 
-    if ($EngineBuilds -and ($EngineBuilds.Length -gt 0))
+    if ($EngineBuilds -and $EngineBuilds.Count -gt 0)
     {
-        Write-Debug "Registered Engines ($($EngineBuilds.Length)):"
+        Write-Debug "Registered Engines ($($EngineBuilds.Count)):"
 
-        for ($i = 0; $i -lt $EngineBuilds.Length; $i++)
+        for ($i = 0; $i -lt $EngineBuilds.Count; $i++)
         {
-            $Property = $EngineBuilds[$i].Property
+            $Build = $EngineBuilds[$i]
 
-            # Sometimes the key exists but does not actually contain any properties,
-            # in which case there aren't any engine builds registered
-            if (!$Property)
-            {
-                Write-Debug "Registry key contains empty property at i=$i, ignoring it"
-                continue;
-            }
+            Write-Debug "  [$i] $($Build.Name) = '$($Build.Root)'"
 
-            $Value = Get-ItemPropertyValue -Path "Registry::$BuildsRegistryKey" -Name $Property
-
-            Write-Debug "  [$i] $Property = '$Value'"
-
-            if ($Name -and ($Property -ieq $Name))
+            # If searching for a specific $Name and it matches this $Build.Name
+            if ($Name -and ($Build.Name -ieq $Name))
             {
                 # An explicit $Name search matched
-                $Result = @{Name=$Property; Root=$Value}
+                $Result = $Build
 
-                Write-Debug "$Property matches -Engine; select result [$i]"
+                Write-Debug "Name search match [$Name]; select result [$i]"
             }
-            elseif (!$Name -and ($EngineBuilds.Length -eq 1))
+            elseif (!$Name -and ($EngineBuilds.Count -eq 1))
             {
                 # - There is no explicit $Name Search
                 # - There is exactly 1 registered Engine Build
@@ -131,16 +140,73 @@ function SelectEngineRootByRegistry()
                 if ($NoDefault)
                 {
                     # - The -NoDefault switch is set
-                    Write-Debug "$Property is only Engine but -NoDefault is set; DO NOT use as default"
+                    Write-Debug "$($Build.Name) is the only Engine but -NoDefault is set; DO NOT use as default"
                 }
                 else
                 {
                     # - The -NoDefault switch is not set
                     # Select this, the only registered Engine Build, as the default result
-                    $Result = @{Name=$Property; Root=$Value}
+                    $Result = $Build
 
-                    Write-Debug "$Property is the only engine, use as default result [$i]"
+                    Write-Debug "$($Build.Name) is the only engine, use as default result [$i]"
                 }
+            }
+        }
+
+        # If we did not find a suitable result, and an explicit search $Name is not set
+        if (!$Result -and !$Name)
+        {
+            if (!$NoDefault)
+            {
+                if ($EngineBuilds.Count -eq 1)
+                {
+                    # There is only 1 custom engine; That is the default
+                    $Result = $EngineBuilds[0]
+                }
+                else
+                {
+                    # Check current directory (and recursively its parents)
+                    # to see if any of them are a registered Engine, and if so
+                    # select the engine whose directory tree we are in.
+
+                    $d = Get-Item -Path $(Get-Location)
+
+                    while ($d -and !$Result)
+                    {
+                        for ($i = 0; $i -lt $EngineBuilds.Count; $i++)
+                        {
+                            # Discard stderr as sometimes this path won't exist, that's fine, don't confuse people with errors to the console
+                            $root = Get-Item -Path $EngineBuilds[$i].Root 2> $null
+
+                            # Check if it exists
+                            if ($root -and ($root.FullName -ieq $d.FullName))
+                            {
+                                # Found this Build root
+                                $Result = $EngineBuilds[$i]
+
+                                Write-Debug "Found Engine[$i].Root: $root"
+
+                                # Don't need to keep searching
+                                break
+                            }
+                            elseif (!$root)
+                            {
+                                Write-Debug "Engine[$i].Root [$($EngineBuilds[$i].Root)] root does not exist [$($EngineBuilds[$i].Root)]"
+                            }
+                            else
+                            {
+                                Write-Debug "Engine[$i].Root [$($EngineBuilds[$i].Root)] not match [$d]"
+                            }
+                        }
+
+                        # Traverse up until there is no more traversing
+                        $d = $d.Parent
+                    }
+                }
+            }
+            else
+            {
+                Write-Debug "Build is not set; not choosing default build due to -NoDefault"
             }
         }
     }
@@ -158,11 +224,7 @@ function SelectEngineRootByRegistry()
 if ($List)
 {
     $BuildList = &ListEngineBuildsInRegistry
-    if ($BuildList -and $BuildList.Count -gt 0)
-    {
-        return $BuildList
-    }
-    return $null
+    return $BuildList
 }
 
 
@@ -182,8 +244,17 @@ if (!$Name -and !$NoDefault)
 {
     if (!$UProject)
     {
-        # No $UProject was named, so load the default UProject
-        $UProject = & $PSScriptRoot/UProject.ps1
+        try
+        {
+            # No $UProject was named, so load the default UProject
+            # We don't care about errors here, if there is no active project, that's fine
+            $UProject = & $PSScriptRoot/UProject.ps1 2> $null
+        }
+        catch
+        {
+            $UProject = $null
+            Write-Debug "Not in an active UProject directory, cannot auto-select Engine"
+        }
     }
 
     if ($UProject)
