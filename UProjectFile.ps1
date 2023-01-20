@@ -18,7 +18,6 @@
 
 [CmdletBinding()]
 param(
-    [switch]$Quiet,
     [Parameter()]$Path
 )
 
@@ -129,12 +128,8 @@ else
 }
 
 
-$UProjectFile = $UProjectFileItem.FullName
-$UProjectDirectory = $UProjectFileItem.Directory
+$UProjectFile = $UProjectFileItem
 
+Write-Debug "UProjectFile=$UProjectFile"
 
-if (!$Quiet)
-{
-    Write-Host "UProjectFile=$UProjectFile"
-    Write-Host "UProjectDirectory=$UProjectDirectory"
-}
+return $UProjectFile
