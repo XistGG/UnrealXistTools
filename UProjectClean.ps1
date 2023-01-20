@@ -18,16 +18,18 @@ param(
     [switch]$DryRun,
     [switch]$Idea,
     [switch]$ResetDDC,
-    [Parameter()] $UProjectFile
+    [Parameter()]$Path
 )
 
 
-# Resolve optional $UProjectFile parameter
-# (throw if no valid $UProjectFile)
-#   - Set $UProjectFile
-#   - Set $UProjectDirectory
-#
-. $PSScriptRoot\UProjectFile.ps1
+# Determine which UProjectFile we will clean
+
+$UProjectFile = & $PSScriptRoot\UProjectFile.ps1 -Path:$Path
+
+if (!$UProjectFile)
+{
+    throw "No UProjectFile selected for clean"
+}
 
 
 ################################################################################
@@ -39,7 +41,7 @@ Write-Host "Scanning files & directories..."
 # All directories at any depth named 'Binaries' or 'Intermediate'
 # Include DerivedDataCache directories only if you set -ResetDDC parameter
 #
-$TempDirs = Get-ChildItem -Path $UProjectDirectory -Directory -Recurse `
+$TempDirs = Get-ChildItem -Path $UProjectFile.Directory -Directory -Recurse `
     | Where-Object { `
               ($_.Name -ieq 'Binaries') `
           -or ($_.Name -ieq 'Intermediate') `
@@ -48,7 +50,7 @@ $TempDirs = Get-ChildItem -Path $UProjectDirectory -Directory -Recurse `
       }
 
 # *.sln files in the root folder
-$TempFiles = Get-ChildItem -Path $UProjectDirectory -File `
+$TempFiles = Get-ChildItem -Path $UProjectFile.Directory -File `
     | Where-Object {$_.Extension -ieq '.sln'}
 
 
@@ -106,4 +108,4 @@ if ($DryRun)
     exit 151
 }
 
-. $PSScriptRoot\UnrealVersionSelector.ps1 -Quiet -ProjectFiles $UProjectFile
+. $PSScriptRoot\UnrealVersionSelector.ps1 -ProjectFiles $UProjectFile.FullName

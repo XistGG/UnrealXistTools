@@ -20,18 +20,12 @@ param(
     [switch]$ProjectFiles,
     [switch]$SwitchVersion,
     [switch]$SwitchVersionSilent,
-    [switch]$Quiet,
     [switch]$Force,
     [Parameter()] $UProjectFile,
     [Parameter(ValueFromRemainingArguments=$true)] $VarArgs
 )
 
-# Resolve optional $UProjectFile parameter
-# (throw if no valid $UProjectFile)
-#   - Set $UProjectFile
-#   - Set $UProjectDirectory
-#
-. $PSScriptRoot\UProjectFile.ps1
+$UProjectFile = & $PSScriptRoot\UProjectFile.ps1 -Path:$UProjectFile
 
 $ScriptName = $MyInvocation.MyCommand.Name
 
@@ -122,7 +116,7 @@ if ($SwitchVersionSilent -or $SwitchVersion)
     # Check for that here and throw an explicit exception unless -force is specified,
     # in which case forcefully remove the read only bit from the uproject file.
 
-    if ($UProjectFileItem.IsReadOnly)
+    if ($UProjectFile.IsReadOnly)
     {
         if (!$Force)
         {
@@ -130,7 +124,7 @@ if ($SwitchVersionSilent -or $SwitchVersion)
         }
 
         # -force flag is set; explicitly make $UProjectFile writable
-        $UProjectFileItem.IsReadOnly = $false
+        $UProjectFile.IsReadOnly = $false
 
         # Print a warning message so it's obvious we did this
         Write-Warning "-force removed read only attribute from $UProjectFile"
