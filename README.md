@@ -29,6 +29,7 @@ Main Branch: https://github.com/XistGG/UnrealXistTools/
 
 # UEngine.ps1
 
+- By default selects the engine used by the current or named project
 - `-List` lists all available custom engines
 - `-Name` selects from available custom engines
 - `-Project` selects the engine associated with the given .uproject
@@ -41,7 +42,6 @@ UEngine.ps1 -List
 ```
 
 
-
 # UProjectClean.ps1
 
 - Delete all `Binaries` (generated data)
@@ -50,8 +50,6 @@ UEngine.ps1 -List
 - Delete all `.idea` (if you set `-Idea` switch)
 - Delete all `DerivedDataCache` (if you set `-ResetDDC` switch)
 - Generate Project Files
-
-Uses `UProjectFile.ps1`
 
 ### Usage Examples
 
@@ -73,10 +71,6 @@ UProjectClean.ps1 -Debug MyGame.uproject
 Provides a default `$UProjectFile` based on the current directory.
 If you do not explicitly set a -Path, it will auto-guess the
 appropriate .uproject file in the current directory.
-
-- Sets `$UProjectFile`
-- Sets `$UProjectFileItem`
-- Sets `$UProjectDirectory`
 
 ### Usage Examples
 
@@ -101,8 +95,6 @@ UProjectFile.ps1 -Debug path/to/Project/Name.uproject
 # UProject.ps1
 
 Returns JSON parsed contents of `$UProjectFile` as a PowerShell Object
-
-Uses `UProjectFile.ps1`
 
 
 # UnrealVersionSelector.ps1
