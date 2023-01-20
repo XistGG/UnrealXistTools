@@ -124,32 +124,13 @@ function SelectEngineRootByRegistry()
 
             Write-Debug "  [$i] $($Build.Name) = '$($Build.Root)'"
 
-            # If searching for a specific $Name and it matches this $Build.Name
-            if ($Name -and ($Build.Name -ieq $Name))
+            # If searching for a specific $Name and it matches this $Build.Name (only match the first)
+            if ($Name -and ($Build.Name -ieq $Name) -and !$Result)
             {
                 # An explicit $Name search matched
                 $Result = $Build
 
                 Write-Debug "Name search match [$Name]; select result [$i]"
-            }
-            elseif (!$Name -and ($EngineBuilds.Count -eq 1))
-            {
-                # - There is no explicit $Name Search
-                # - There is exactly 1 registered Engine Build
-
-                if ($NoDefault)
-                {
-                    # - The -NoDefault switch is set
-                    Write-Debug "$($Build.Name) is the only Engine but -NoDefault is set; DO NOT use as default"
-                }
-                else
-                {
-                    # - The -NoDefault switch is not set
-                    # Select this, the only registered Engine Build, as the default result
-                    $Result = $Build
-
-                    Write-Debug "$($Build.Name) is the only engine, use as default result [$i]"
-                }
             }
         }
 
@@ -224,6 +205,10 @@ function SelectEngineRootByRegistry()
 if ($List)
 {
     $BuildList = &ListEngineBuildsInRegistry
+    if (!$BuildList.Count)
+    {
+        Write-Error "There are no custom Unreal Engine Builds in the Registry"
+    }
     return $BuildList
 }
 
@@ -253,7 +238,7 @@ if (!$Name -and !$NoDefault)
         catch
         {
             $UProject = $null
-            Write-Debug "Not in an active UProject directory, cannot auto-select Engine"
+            Write-Debug "Not in an active UProject directory, cannot auto-select Engine by UProject"
         }
     }
 
