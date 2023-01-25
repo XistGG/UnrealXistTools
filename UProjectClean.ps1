@@ -7,7 +7,7 @@
 #
 #   - Remove Binaries dirs
 #   - Remove Intermediate dirs
-#   - Remove DerivedDataCache dirs (only if -ResetDDC switch)
+#   - Remove DerivedDataCache dirs (only if -DDC switch)
 #   - Remove .idea directories (only if -Idea switch)
 #   - Remove *.sln files from the project root
 #   - Generate Project Files
@@ -17,7 +17,7 @@
 param(
     [switch]$DryRun,
     [switch]$Idea,
-    [switch]$ResetDDC,
+    [switch]$DDC,
     [Parameter()]$Path
 )
 
@@ -39,13 +39,13 @@ if (!$UProjectFile)
 Write-Host "Scanning files & directories..."
 
 # All directories at any depth named 'Binaries' or 'Intermediate'
-# Include DerivedDataCache directories only if you set -ResetDDC parameter
+# Include DerivedDataCache directories only if you set -DDC parameter
 #
 $TempDirs = Get-ChildItem -Path $UProjectFile.Directory -Directory -Recurse `
     | Where-Object { `
               ($_.Name -ieq 'Binaries') `
           -or ($_.Name -ieq 'Intermediate') `
-          -or (($_.Name -ieq 'DerivedDataCache') -and $ResetDDC) `
+          -or (($_.Name -ieq 'DerivedDataCache') -and $DDC) `
           -or (($_.Name -ieq '.idea') -and $Idea) `
       }
 

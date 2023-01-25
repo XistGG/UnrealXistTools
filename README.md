@@ -48,7 +48,7 @@ UEngine.ps1 -List
 - Delete all `Intermediate` (generated data)
 - Delete all `*.sln` (generated data)
 - Delete all `.idea` (if you set `-Idea` switch)
-- Delete all `DerivedDataCache` (if you set `-ResetDDC` switch)
+- Delete all `DerivedDataCache` (if you set `-DDC` switch)
 - Generate Project Files
 
 ### Usage Examples
