@@ -27,6 +27,15 @@ Main Branch: https://github.com/XistGG/UnrealXistTools/
   - Easy-to-use interface to Epic's UnrealVersionSelector.exe
 
 
+# P4 Tools
+
+- [P4EncodePath.ps1](#p4encodepathps1)
+  - Encode (or `-Decode`) paths for P4
+- [P4ImportBulk.ps1](#p4importbulkps1)
+  - Import a massive number of files into a new depot without breaking P4
+    (tested by importing 800k+ files from UDN P4 `//UE5/Release-5.2`)
+
+
 # UEngine.ps1
 
 - By default selects the engine used by the current or named project
@@ -124,7 +133,26 @@ UnrealVersionSelector.ps1 -SwitchVersion
 UnrealVersionSelector.ps1 -SwitchVersionSilent /Project/Root/Engine/Binaries/../..
 ```
 
-
 ### Help
 
 For more info see `UnrealVersionSelector.ps1 -help`
+
+
+# P4EncodePath.ps1
+
+Encodes or Decodes a P4 path.  See `-Help` for more details.
+
+
+# P4ImportBulk.ps1
+
+Import a massive number of files into a new depot without breaking P4.
+
+As of Jan-2023 I am unable to get P4 to successfully import UDN in one commit.
+Perhaps it is related to RAM availability?
+
+With this script, I can break the 800k+ files into batches and submit those,
+which works great.
+
+See `-Help` for Usage.
+
+PS- Maybe not required if parallel processing is enabled on your P4 server?
