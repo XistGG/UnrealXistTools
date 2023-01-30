@@ -20,6 +20,7 @@
 param(
     [switch]$CreateList,
     [switch]$ImportList,
+    [switch]$NoParallel,
     [switch]$DryRun,
     [switch]$Help,
     [Parameter()]$BatchSize=10000,
@@ -63,6 +64,8 @@ Full Path = $FullPathDisplay
 
       -BatchSize = Max paths to submit to "p4 submit" at once
       -DryRun = Don't actually do anything, just a test run
+      -NoParallel = Disable parallel processing in "p4 submit" (SLOW)
+                    (Do not use this option unless your P4 server requires it)
 
 "@
 }
@@ -163,6 +166,13 @@ function SubmitPaths()
     # Escape quotes in $Description for argument safety
     $args = @("submit", "-d", "`"Bulk Import $($Description -replace '"','`"')`"")
 
+    # If Parallel processing is not explicitly disabled, then enable it,
+    # which makes "p4 submit" execute much faster
+    if (!$NoParallel)
+    {
+        $args += "--parallel=threads=8,batch=32"
+    }
+
     if ($DryRun)
     {
         Write-Debug "Skipping submit exec due to -DryRun switch"
@@ -192,6 +202,147 @@ function SubmitPaths()
 }
 
 
+function ImportInBatches
+{
+    begin
+    {
+        # It's meaningless to start at line less than 1
+        if ($StartLine -lt 1)
+        {
+            $StartLine = 1
+        }
+
+        $LineNum = 0
+        $TotalOutputLineNum = 0
+
+        $CurrentBatchSize = 0
+        $CurrentBucketSize = 0
+        $CurrentBucket = New-Object System.Collections.ArrayList
+
+        $SubmitStartLine = $StartLine
+
+        # System.IO.StreamReader REQUIRES AN ABSOLUTE PATH TO THE FILE
+        $file = New-Object System.IO.StreamReader($SyncFileItem.FullName)
+
+    }
+    process
+    {
+        if (!$file)
+        {
+            throw "Cannot open file: $($SyncFileItem.FullName)"
+        }
+
+        # If we're seeking deep into the file, it might take a while,
+        # which looks like the program is fucked; show that it's not.
+        if ($StartLine -gt 1000)
+        {
+            Write-Host "Seeking to Line ${StartLine}..."
+        }
+
+        # DISABLE CTRL+C DURING `p4 submit`
+        [Console]::TreatControlCAsInput = $true
+
+        while (($line = $file.readline()) -ne $null)
+        {
+            # If user pressed CTRL+C during `p4 submit`, bail out now that it has completed
+            if ([Console]::KeyAvailable)
+            {
+                $key = [Console]::ReadKey($true)
+                if ($key.key -eq "C" -and $key.modifiers -eq "Control")
+                {
+                    # Clean up and exit
+                    Write-Error "Exiting due to CTRL+C. To resume where you left off: $ScriptName -ImportList -StartLine $SubmitStartLine"
+                    # User pressed CTRL+C; don't add anymore files
+                    throw "Terminated by CTRL+C"
+                }
+            }
+
+            $LineNum++
+
+            # Don't process this line if we're not yet supposed to start
+            if ($LineNum -lt $StartLine)
+            {
+                continue
+            }
+
+            Write-Debug "${LineNum}:$line"
+
+            # If the output says the file should be added, then lets add it
+            if ($line -imatch '#\d+ - opened for add$')
+            {
+                $Path = $line -ireplace '#\d+ - opened for add$',''
+
+                # `p4 add -m` writes filenames in an Encoded format, so we need to decode it
+                # see: https://www.perforce.com/manuals/cmdref/Content/CmdRef/filespecs.html
+                $DecodedPath =& $PSScriptRoot/P4EncodePath.ps1 -Decode -Path $Path
+
+                [void] $CurrentBucket.Add($DecodedPath)
+
+                $TotalOutputLineNum++
+                $CurrentBucketSize++
+            }
+
+            # Stop if we've reached the max line to process
+            if ($StopLine -ge 1 -and $LineNum -ge $StopLine)
+            {
+                break
+            }
+
+            # Stop when we've output enough lines
+            if ($MaxLines -gt 0 -and $TotalOutputLineNum -ge $MaxLines)
+            {
+                break
+            }
+
+            # If the bucket is full, add files
+            if ($BucketSize -gt 0 -and $CurrentBucketSize -ge $BucketSize)
+            {
+                # Add these paths and submit to the depot
+                $process =& AddPaths -Paths $CurrentBucket
+
+                # Update Batch
+                $CurrentBatchSize += $CurrentBucketSize
+
+                # Reset Bucket
+                $CurrentBucketSize = 0
+                $CurrentBucket = New-Object System.Collections.ArrayList
+            }
+
+            # Each time the buckets add up to a batch, submit to the server
+            if ($CurrentBatchSize -ge $BatchSize)
+            {
+                $process =& SubmitPaths -Description "${SubmitStartLine}..${LineNum}"
+
+                # Reset Batch
+                $SubmitStartLine = $LineNum + 1
+                $CurrentBatchSize = 0
+            }
+        }
+
+        # Consume any remaining bucket contents
+        if ($CurrentBucketSize -gt 0)
+        {
+            $process =& AddPaths -Paths $CurrentBucket
+            # Update Batch
+            $CurrentBatchSize += $CurrentBucketSize
+        }
+
+        # Submit any remaining batch contents
+        if ($CurrentBatchSize -gt 0)
+        {
+            $process =& SubmitPaths -Description "${SubmitStartLine}..${LineNum}"
+        }
+    }
+    end
+    {
+        # RE-ENABLE CTRL+C AFTER `p4 submit`
+        [Console]::TreatControlCAsInput = $false
+
+        [void] $file.Dispose()
+    }
+}
+
+
 if ($ImportList)
 {
     if (!$SyncFileItem -or !$SyncFileItem.Exists)
@@ -201,108 +352,7 @@ if ($ImportList)
 
     Write-Debug "Reading SyncFile=`"$($SyncFileItem.FullName)`""
 
-    # It's meaningless to start at line less than 1
-    if ($StartLine -lt 1)
-    {
-        $StartLine = 1
-    }
-
-    $LineNum = 0
-    $TotalOutputLineNum = 0
-
-    $CurrentBatchSize = 0
-    $CurrentBucketSize = 0
-    $CurrentBucket = New-Object System.Collections.ArrayList
-
-    $SubmitStartLine = $StartLine
-
-    # System.IO.StreamReader REQUIRES AN ABSOLUTE PATH TO THE FILE
-    $file = New-Object System.IO.StreamReader($SyncFileItem.FullName)
-
-    if (!$file)
-    {
-        throw "Cannot open file: $($SyncFileItem.FullName)"
-    }
-
-    while (($line = $file.readline()) -ne $null)
-    {
-        $LineNum++
-
-        # Don't process this line if we're not yet supposed to start
-        if ($LineNum -lt $StartLine)
-        {
-            continue
-        }
-
-        Write-Debug "${LineNum}:$line"
-
-        # If the output says the file should be added, then lets add it
-        if ($line -imatch '#\d+ - opened for add$')
-        {
-            $Path = $line -ireplace '#\d+ - opened for add$',''
-
-            # `p4 add -m` writes filenames in an Encoded format, so we need to decode it
-            # see: https://www.perforce.com/manuals/cmdref/Content/CmdRef/filespecs.html
-            $DecodedPath =& $PSScriptRoot/P4EncodePath.ps1 -Decode -Path $Path
-
-            [void] $CurrentBucket.Add($DecodedPath)
-
-            $TotalOutputLineNum++
-            $CurrentBucketSize++
-        }
-
-        # Stop if we've reached the max line to process
-        if ($StopLine -ge 1 -and $LineNum -ge $StopLine)
-        {
-            break
-        }
-
-        # Stop when we've output enough lines
-        if ($MaxLines -gt 0 -and $TotalOutputLineNum -ge $MaxLines)
-        {
-            break
-        }
-
-        # If the bucket is full, add files
-        if ($BucketSize -gt 0 -and $CurrentBucketSize -ge $BucketSize)
-        {
-            # Add these paths and submit to the depot
-            $process =& AddPaths -Paths $CurrentBucket
-
-            # Update Batch
-            $CurrentBatchSize += $CurrentBucketSize
-
-            # Reset Bucket
-            $CurrentBucketSize = 0
-            $CurrentBucket = New-Object System.Collections.ArrayList
-        }
-
-        # Each time the buckets add up to a batch, submit to the server
-        if ($CurrentBatchSize -ge $BatchSize)
-        {
-            $process =& SubmitPaths -Description "${SubmitStartLine}..${LineNum}"
-
-            # Reset Batch
-            $SubmitStartLine = $LineNum + 1
-            $CurrentBatchSize = 0
-        }
-    }
-
-    [void] $file.Dispose()
-
-    # Consume any remaining bucket contents
-    if ($CurrentBucketSize -gt 0)
-    {
-        $process =& AddPaths -Paths $CurrentBucket
-        # Update Batch
-        $CurrentBatchSize += $CurrentBucketSize
-    }
-
-    # Submit any remaining batch contents
-    if ($CurrentBatchSize -gt 0)
-    {
-        $process =& SubmitPaths -Description "${SubmitStartLine}..${LineNum}"
-    }
+    ImportInBatches
 
     $ValidUsage = $true
 }
