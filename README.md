@@ -154,5 +154,3 @@ With this script, I can break the 800k+ files into batches and submit those,
 which works great.
 
 See `-Help` for Usage.
-
-PS- Maybe not required if parallel processing is enabled on your P4 server?
