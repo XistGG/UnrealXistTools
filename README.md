@@ -38,11 +38,14 @@ Main Branch: https://github.com/XistGG/UnrealXistTools/
 
 # UEngine.ps1
 
+[view source: UEngine.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/UEngine.ps1)
+
 - By default selects the engine used by the current or named project
 - `-List` lists all available custom engines
 - `-Name` selects from available custom engines
 - `-Project` selects the engine associated with the given .uproject
 
+See `-Help` for more Usage info.
 
 ### Usage Examples
 
@@ -52,6 +55,8 @@ UEngine.ps1 -List
 
 
 # UProjectClean.ps1
+
+[view source: UProjectClean.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/UProjectClean.ps1)
 
 - Delete all `Binaries` (generated data)
 - Delete all `Intermediate` (generated data)
@@ -76,6 +81,8 @@ UProjectClean.ps1 -Debug MyGame.uproject
 
 
 # UProjectFile.ps1
+
+[view source: UProjectFile.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/UProjectFile.ps1)
 
 Provides a default `$UProjectFile` based on the current directory.
 If you do not explicitly set a -Path, it will auto-guess the
@@ -103,15 +110,20 @@ UProjectFile.ps1 -Debug path/to/Project/Name.uproject
 
 # UProject.ps1
 
+[view source: UProject.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/UProject.ps1)
+
 Returns JSON parsed contents of `$UProjectFile` as a PowerShell Object
 
 
 # UnrealVersionSelector.ps1
 
+[view source: UnrealVersionSelector.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/UnrealVersionSelector.ps1)
+
 - Allows developer to refer to `.uproject` files via relative paths
 - Infers the name of `.uproject` files based on current directory
 - Executes Epic's `UnrealVersionSelector.exe` for base functionality
 
+See `-Help` for Usage.
 
 ### Usage Examples
 
@@ -133,17 +145,21 @@ UnrealVersionSelector.ps1 -SwitchVersion
 UnrealVersionSelector.ps1 -SwitchVersionSilent /Project/Root/Engine/Binaries/../..
 ```
 
-### Help
-
-For more info see `UnrealVersionSelector.ps1 -help`
-
 
 # P4EncodePath.ps1
 
+[view source: P4EncodePath.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/P4EncodePath.ps1)
+
 Encodes or Decodes a P4 path.  See `-Help` for more details.
 
+See [P4 filespecs](https://www.perforce.com/manuals/cmdref/Content/CmdRef/filespecs.html)
+for more info regarding P4 path encoding requirements.
+
+See `-Help` for Usage.
 
 # P4ImportBulk.ps1
+
+[view source: P4ImportBulk.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/P4ImportBulk.ps1)
 
 Import a massive number of files into a new depot without breaking P4.
 
