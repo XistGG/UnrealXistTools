@@ -23,7 +23,7 @@ param(
     [switch]$NoParallel,
     [switch]$DryRun,
     [switch]$Help,
-    [Parameter()]$BatchSize=10000,
+    [Parameter()]$BatchSize=50000,
     [Parameter()]$BucketSize=50,
     [Parameter()]$SyncFile=".p4sync.txt",
     [Parameter()]$StartLine=1,
@@ -51,10 +51,15 @@ function GetHelpOutput()
 Current SyncFile = "$SyncFile"
 Full Path = $FullPathDisplay
 
+# FIRST: CREATE THE IMPORT LIST:
 & $ScriptName -CreateList
 
     Create $SyncFile like: "p4 add -f -n ... > $SyncFile"
 
+# THEN: if this is a brand new depot, 'p4 add .p4ignore.txt'
+# before you bulk import anything.
+
+# THEN: IMPORT THE IMPORT LIST YOU CREATED:
 & $ScriptName -ImportList
 
     Read previously-created $SyncFile and execute multiple
@@ -62,7 +67,12 @@ Full Path = $FullPathDisplay
 
     Optional additional flags:
 
-      -BatchSize = Max paths to submit to "p4 submit" at once
+      -BatchSize = Max paths to submit to "p4 submit" at once.
+                   50k works for me.  Too high, p4 will crash during
+                   the update.  Too low, you get tons of import CLs.
+      -BucketSize = Max number of files to include in one command line
+                    (at some point your OS complains max command line
+                    length exceeded; not much value in bumping this up)
       -DryRun = Don't actually do anything, just a test run
       -NoParallel = Disable parallel processing in "p4 submit" (SLOW)
                     (Do not use this option unless your P4 server requires it)
