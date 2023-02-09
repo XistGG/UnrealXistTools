@@ -6,6 +6,7 @@
 #   you can select different engines based on their names.
 #
 #   -List will show you the list of builds
+#   -NewName will allow you to rename the registry keys
 #   -Help for more info
 #
 # Epic's Registry Build List:
@@ -15,6 +16,7 @@
 [CmdletBinding()]
 param(
     [Parameter()]$Name,
+    [Parameter()]$NewName,
     [Parameter()]$UProject,
     [switch]$Help,
     [switch]$List,
@@ -42,6 +44,11 @@ if ($Help)
 & $ScriptName Name
 
     Return the Named engine build, returns null if no such Name.
+
+& $ScriptName Name -NewName MyEngine
+
+    Change the name of the "Name" engine to "MyEngine".
+    Return the build with the updated name.
 
 & $ScriptName -NoDefault
 
@@ -196,6 +203,24 @@ function SelectEngineRootByRegistry()
 }
 
 
+function ChangeEngineRegistryName()
+{
+    [CmdletBinding()]
+    param(
+        [Parameter()]$UEngine,
+        [Parameter()]$NewName
+    )
+
+    Write-Debug "Rename $($UEngine.Name) to $NewName"
+
+    Rename-ItemProperty -Path "Registry::$BuildsRegistryKey" -Name $UEngine.Name -NewName $NewName
+
+    $UEngine.Name = $NewName
+
+    return $UEngine
+}
+
+
 ################################################################################
 ##  Main
 ################################################################################
@@ -204,7 +229,7 @@ function SelectEngineRootByRegistry()
 # If they just want to see a list, show it
 if ($List)
 {
-    $BuildList = &ListEngineBuildsInRegistry
+    $BuildList =& ListEngineBuildsInRegistry
     if (!$BuildList.Count)
     {
         Write-Error "There are no custom Unreal Engine Builds in the Registry"
@@ -220,7 +245,7 @@ if ($List)
 # If $UProject is set, resolve it
 if ($UProject)
 {
-    $UProject = & $PSScriptRoot/UProject.ps1 -Path:$UProject
+    $UProject =& $PSScriptRoot/UProject.ps1 -Path:$UProject
 }
 
 
@@ -233,7 +258,7 @@ if (!$Name -and !$NoDefault)
         {
             # No $UProject was named, so load the default UProject
             # We don't care about errors here, if there is no active project, that's fine
-            $UProject = & $PSScriptRoot/UProject.ps1 2> $null
+            $UProject =& $PSScriptRoot/UProject.ps1 2> $null
         }
         catch
         {
@@ -255,11 +280,17 @@ if (!$Name -and !$NoDefault)
 ##  Get/Set the current $UEngine
 
 
-$UEngine = &SelectEngineRootByRegistry
+$UEngine =& SelectEngineRootByRegistry
 
 if ($UEngine)
 {
     Write-Debug "UEngine = $($UEngine.Name) = $($UEngine.Root)"
+
+    # If they want to change the name, do so
+    if ($NewName)
+    {
+        $UEngine =& ChangeEngineRegistryName -UEngine:$UEngine -NewName:$NewName
+    }
 }
 elseif ($Name)
 {
@@ -272,9 +303,7 @@ else
     # so there is no $UEngine selected.
 
     # Execute own help
-    & $PSScriptRoot/UEngine.ps1 -Help
-
-    return $null
+    return & $PSScriptRoot/UEngine.ps1 -Help
 }
 
 return $UEngine

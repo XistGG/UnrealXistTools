@@ -17,6 +17,7 @@ Main Branch: https://github.com/XistGG/UnrealXistTools/
 # Build Tools
 
 - [UEngine.ps1](#uengineps1)
+  - View and Modify Custom Engine Builds in Windows Registry
 - [UProjectClean.ps1](#uprojectcleanps1)
   - Completely Clean/Reset Repo/Depot
   - Removes all generated C++ Build files
@@ -43,6 +44,7 @@ Main Branch: https://github.com/XistGG/UnrealXistTools/
 - By default selects the engine used by the current or named project
 - `-List` lists all available custom engines
 - `-Name` selects from available custom engines
+- `-NewName` renames an engine to your choice of names
 - `-Project` selects the engine associated with the given .uproject
 
 See `-Help` for more Usage info.
@@ -51,6 +53,10 @@ See `-Help` for more Usage info.
 
 ```powershell
 UEngine.ps1 -List
+```
+
+```powershell
+UEngine.ps1 OldRandomGUIDName -NewName MyEngine
 ```
 
 
