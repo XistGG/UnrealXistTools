@@ -7,4 +7,3 @@
 # Linux machine (the default behavior on GitHub)
 *.bat eol=crlf
 *.sh eol=lf
-*.ps1 eol=lf
