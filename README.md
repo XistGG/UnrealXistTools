@@ -35,6 +35,8 @@ Main Branch: https://github.com/XistGG/UnrealXistTools/
 - [P4ImportBulk.ps1](#p4importbulkps1)
   - Import a massive number of files into a new depot without breaking P4
     (tested by importing 800k+ files from UDN P4 `//UE5/Release-5.2`)
+- [P4Info.ps1](#p4infops1)
+  - Makes it real easy to extract `p4 info` values
 
 
 # UEngine.ps1
@@ -176,3 +178,24 @@ With this script, I can break the 800k+ files into batches and submit those,
 which works great.
 
 See `-Help` for Usage.
+
+# P4Info.ps1
+
+[view source: P4Info.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/P4Info.ps1)
+
+Extracts `p4 info` output into a Dictionary, which it returns as the result.
+
+You can then grab specific keys if you want, for example:
+
+```powershell
+$P4Username = (P4Info.ps1)."User name"
+```
+
+You can also use this to initialize `.p4config` files like:
+
+```powershell
+P4Info.ps1 -Config > .p4config
+```
+
+Try the `-Debug` switch to see the parse info.
+
