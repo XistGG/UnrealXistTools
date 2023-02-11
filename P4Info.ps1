@@ -8,16 +8,19 @@
 #
 #   -Config switch causes `.p4config` contents to be written to stdout,
 #           so you can for example `P4Info.ps1 -config > .p4config`
+#   -Full switch causes a full query of p4 info, including items that
+#         require database lookups.  Disabled by default.
 #
 
 [CmdletBinding()]
 param (
-    [switch] $Config
+    [switch] $Config,
+    [switch] $Full
 )
 
 
-# Read p4 info
-$P4Output = p4 info
+# Read p4 info (Full version or -s version)
+$P4Output = $Full ? (p4 info) : (p4 info -s)
 
 # Parse the output
 $P4Info = New-Object "System.Collections.Generic.Dictionary[[string],[string]]"
