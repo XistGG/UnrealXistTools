@@ -232,7 +232,9 @@ if ($List)
     $BuildList =& ListEngineBuildsInRegistry
     if (!$BuildList.Count)
     {
-        Write-Error "There are no custom Unreal Engine Builds in the Registry"
+        Write-Error "There are no custom Unreal Engine Builds in the Registry."
+        Write-Error "You need to run UnrealVersionSelector.exe in your Custom Engine Directory."
+        Write-Error "Example: D:/UE_5.1/Engine/Binaries/Win64/UnrealVersionSelector-Win64-Shipping.exe"
     }
     return $BuildList
 }
