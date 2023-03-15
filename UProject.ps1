@@ -14,18 +14,8 @@ param(
 ##  Main
 ################################################################################
 
-if ($Path)
-{
-    Write-Debug "Compute UProjectFile Path=$Path"
-    $UProjectFile = & $PSScriptRoot/UProjectFile.ps1 -Path $Path
-}
-else
-{
-    # No path is selected, use the default
-    Write-Debug "Compute Default UProjectFile"
-    $UProjectFile = & $PSScriptRoot/UProjectFile.ps1
-}
-
+Write-Debug "Compute UProjectFile Path=[$Path]"
+$UProjectFile =& $PSScriptRoot/UProjectFile.ps1 -Path:$Path
 
 # Do not continue without a valid $UProjectFile
 
