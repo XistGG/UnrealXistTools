@@ -16,16 +16,38 @@ Main Branch: https://github.com/XistGG/UnrealXistTools/
 
 # Build Tools
 
-- [UEngine.ps1](#uengineps1)
-  - View and Modify Custom Engine Builds in Windows Registry
 - [UProjectClean.ps1](#uprojectcleanps1)
   - Completely Clean/Reset Repo/Depot
   - Removes all generated C++ Build files
   - Regenerate Project Files
-- [UProjectFile.ps1](#uprojectfileps1)
-- [UProject.ps1](#uprojectps1)
+- [UEdit.ps1](#ueditps1)
+  - Edit a project in Unreal Editor
 - [UnrealVersionSelector.ps1](#unrealversionselectorps1)
   - Easy-to-use interface to Epic's UnrealVersionSelector.exe
+
+
+# IDE Tools
+
+- [Rider.ps1](#riderps1)
+  - Edit a project in Rider
+- [VS.ps1](#vsps1)
+  - Edit a project in Visual Studio
+
+
+# Engine Tools
+
+- [UEngine.ps1](#uengineps1)
+  - View and Modify Custom Engine Builds *(read/write Epic's Windows registry keys)*
+
+
+# Project Tools
+
+- [UProject.ps1](#uprojectps1)
+  - Get Project Settings
+- [UProjectFile.ps1](#uprojectfileps1)
+  - Get the `.uproject` file associated with a path (current directory by default)
+- [UProjectSln.ps1](#uprojectslnps1)
+  - Get the `.sln` file associated with a path (current directory by default)
 
 
 # P4 Tools
@@ -37,6 +59,132 @@ Main Branch: https://github.com/XistGG/UnrealXistTools/
     (tested by importing 800k+ files from UDN P4 `//UE5/Release-5.2`)
 - [P4Info.ps1](#p4infops1)
   - Makes it real easy to extract `p4 info` values
+
+
+--------------------------------------------------------------------------------
+
+
+# UProjectClean.ps1
+
+[view source: UProjectClean.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/UProjectClean.ps1)
+
+- Delete all `Binaries` (generated data)
+- Delete all `Intermediate` (generated data)
+- Delete all `*.sln` (generated data)
+- Delete all `.idea` (if you set `-Idea` switch)
+- Delete all `DerivedDataCache` (if you set `-DDC` switch)
+- Generate Project Files
+
+Supports the `-Debug` flag, add it to any command to gain more insight.
+
+### Usage Examples
+
+Clean the project in the current directory:
+```powershell
+UProjectClean.ps1
+```
+
+Clean a specific `MyGame.uproject`:
+```powershell
+UProjectClean.ps1 MyGame.uproject
+```
+
+
+# UEdit.ps1
+
+[view source: UEdit.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/UEdit.ps1)
+
+Start Unreal Editor: Open the `.uproject` associated with the current directory.
+
+Alias for `UnrealVersionSelector.ps1 -Editor $(&UProjectFile.ps1 -Path:$Path).FullName`
+
+Supports the `-Debug` flag, add it to any command to gain more insight.
+
+
+### Usage Examples
+
+Open the `.uproject` file in the current directory:
+```powershell
+UEdit.ps1
+```
+
+Open the `.uproject` file in the specified directory:
+```powershell
+UEdit.ps1 path/to/project
+```
+
+
+# UnrealVersionSelector.ps1
+
+[view source: UnrealVersionSelector.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/UnrealVersionSelector.ps1)
+
+- Allows developer to refer to `.uproject` files via relative paths
+- Infers the name of `.uproject` files based on current directory
+- Executes Epic's `UnrealVersionSelector.exe` for base functionality
+
+Supports the `-Debug` flag, add it to any command to gain more insight.
+
+See `-Help` for Usage.
+
+### Usage Examples
+
+Generate project files:
+```powershell
+UnrealVersionSelector.ps1 -ProjectFiles
+```
+
+Choose which Engine to use:
+```powershell
+UnrealVersionSelector.ps1 -SwitchVersion
+```
+
+Choose a Specific Engine:
+```powershell
+UnrealVersionSelector.ps1 -SwitchVersionSilent /Project/Root/Engine/Binaries/../..
+```
+
+
+--------------------------------------------------------------------------------
+
+
+# Rider.ps1
+
+[view source: Rider.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/Rider.ps1)
+
+Start Rider: Open the `.uproject` associated with the current directory.
+
+Supports the `-Debug` flag, add it to any command to gain more insight.
+
+### Usage Examples
+
+Open the `.uproject` file in the current directory:
+```powershell
+Rider.ps1
+```
+
+Open the `.sln` file in the current directory:
+```powershell
+Rider.ps1 -sln
+```
+
+
+# VS.ps1
+
+[view source: VS.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/VS.ps1)
+
+Start Visual Studio: Open the `.sln` associated with the current directory.
+
+Supports the `-Debug` flag, add it to any command to gain more insight.
+
+### Usage Examples
+
+Open the `.sln` file in the current directory:
+```powershell
+VS.ps1
+```
+
+
+--------------------------------------------------------------------------------
 
 
 # UEngine.ps1
@@ -62,59 +210,8 @@ UEngine.ps1 OldRandomGUIDName -NewName MyEngine
 ```
 
 
-# UProjectClean.ps1
+--------------------------------------------------------------------------------
 
-[view source: UProjectClean.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/UProjectClean.ps1)
-
-- Delete all `Binaries` (generated data)
-- Delete all `Intermediate` (generated data)
-- Delete all `*.sln` (generated data)
-- Delete all `.idea` (if you set `-Idea` switch)
-- Delete all `DerivedDataCache` (if you set `-DDC` switch)
-- Generate Project Files
-
-### Usage Examples
-
-Clean the project in the current directory:
-
-```powershell
-UProjectClean.ps1 -Debug
-```
-
-Clean a specific `MyGame.uproject`:
-
-```powershell
-UProjectClean.ps1 -Debug MyGame.uproject
-```
-
-
-# UProjectFile.ps1
-
-[view source: UProjectFile.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/UProjectFile.ps1)
-
-Provides a default `$UProjectFile` based on the current directory.
-If you do not explicitly set a -Path, it will auto-guess the
-appropriate .uproject file in the current directory.
-
-### Usage Examples
-
-Set `$UProjectFile` to the current directory's default value.
-
-```powershell
-UProjectFile.ps1 -Debug
-```
-
-Set `$UProjectFile` to the default one in the `path/to/Project/` directory.
-
-```powershell
-UProjectFile.ps1 -Debug path/to/Project/
-```
-
-Set `$UProjectFile` to be a specific .uproject
-
-```powershell
-UProjectFile.ps1 -Debug path/to/Project/Name.uproject
-```
 
 # UProject.ps1
 
@@ -122,36 +219,82 @@ UProjectFile.ps1 -Debug path/to/Project/Name.uproject
 
 Returns JSON parsed contents of `$UProjectFile` as a PowerShell Object
 
+Supports the `-Debug` flag, add it to any command to gain more insight.
 
-# UnrealVersionSelector.ps1
+### Usage
 
-[view source: UnrealVersionSelector.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/UnrealVersionSelector.ps1)
-
-- Allows developer to refer to `.uproject` files via relative paths
-- Infers the name of `.uproject` files based on current directory
-- Executes Epic's `UnrealVersionSelector.exe` for base functionality
-
-See `-Help` for Usage.
-
-### Usage Examples
-
-#### Generate project files
-
+View the current `.uproject` in terminal:
 ```powershell
-UnrealVersionSelector.ps1 -ProjectFiles
+UProject.ps1
 ```
 
-#### Choose which Engine to use
-
+Get the Engine Association of a specific `.uproject`:
 ```powershell
-UnrealVersionSelector.ps1 -SwitchVersion
+$(UProject.ps1 project.uproject).EngineAssociation
 ```
 
-##### Choose a Specific Engine
 
+# UProjectFile.ps1
+
+[view source: UProjectFile.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/UProjectFile.ps1)
+
+Returns the `.uproject` file relevant to the `-Path`
+(implicit first string parameter, or current directory by default).
+
+Example: `/project/project.uproject`
+
+Supports the `-Debug` switch.
+Enable it to see debug info to help you understand how the `.uproject` is being assigned.
+
+### Usage
+
+Select the default `.uproject` for the current directory:
 ```powershell
-UnrealVersionSelector.ps1 -SwitchVersionSilent /Project/Root/Engine/Binaries/../..
+UProjectFile.ps1
 ```
+
+Select the default `.uproject` in the specified directory:
+```powershell
+UProjectFile.ps1 /project
+```
+
+Select a specific `.uproject`:
+```powershell
+UProjectFile.ps1 project.uproject
+```
+
+
+# UProjectSln.ps1
+
+[view source: UProjectSln.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/UProjectSln.ps1)
+
+Returns the `.sln` file relevant to the `-Path`
+(implicit first string parameter, or current directory by default).
+
+Example: `/project/project.sln`
+
+Supports the `-Debug` switch.
+Enable it to see debug info to help you understand how the `.sln` is being assigned.
+
+### Usage
+
+Select the default `.sln` for the current directory:
+```powershell
+UProjectSln.ps1
+```
+
+Select the default `.sln` in the specified directory:
+```powershell
+UProjectSln.ps1 /project
+```
+
+Select a specific `.sln`:
+```powershell
+UProjectSln.ps1 project.sln
+```
+
+
+--------------------------------------------------------------------------------
 
 
 # P4EncodePath.ps1
@@ -165,6 +308,7 @@ for more info regarding P4 path encoding requirements.
 
 See `-Help` for Usage.
 
+
 # P4ImportBulk.ps1
 
 [view source: P4ImportBulk.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/P4ImportBulk.ps1)
@@ -177,7 +321,10 @@ Perhaps it is related to RAM availability?
 With this script, I can break the 800k+ files into batches and submit those,
 which works great.
 
+Supports the `-Debug` flag, add it to any command to gain more insight.
+
 See `-Help` for Usage.
+
 
 # P4Info.ps1
 
