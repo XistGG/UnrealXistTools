@@ -68,7 +68,7 @@ function FindSlnInDirectory()
             }
 
             Write-Error "Cannot auto-select a .sln file in a directory with multiple .sln; You must specify which .sln to use for this directory"
-            throw "Explicit uproject required for directory: $Directory"
+            throw "Explicit .sln required for directory: $Directory"
         }
 
         Write-Debug "Found 2+ .sln in $Directory, using: $Result"
@@ -97,35 +97,35 @@ if (!$Path)  # if $null, '' or any other empty value
 }
 
 # Try to get information about the UProject (file or directory)
-$SlnItem = Get-Item -Path $Path 2> $null
+$UProjectSln = Get-Item -Path $Path 2> $null
 
-if (!$SlnItem -or !$SlnItem.Exists)
+if (!$UProjectSln -or !$UProjectSln.Exists)
 {
     throw "No such UProject file or directory: $Path"
 }
 
 # First check of $UProjectSln is a file
-if (!$SlnItem.PSIsContainer)
+if (!$UProjectSln.PSIsContainer)
 {
-    # $SlnItem is a file; make sure it has a .sln extension
-    if (!($SlnItem.Extension -ieq '.sln'))
+    # $UProjectSln is a file; make sure it has a .sln extension
+    if (!($UProjectSln.Extension -ieq '.sln'))
     {
         throw "Sln is not a .sln: $Path"
     }
 
-    Write-Debug "SlnItem is a .sln file; using it: $($SlnItem.FullName)"
+    Write-Debug "UProjectSln is a .sln file; using it: $($UProjectSln.FullName)"
 }
 else
 {
-    # $SlnItem is a directory, try to find the correct .sln to use
-    $SlnItem =& FindSlnInDirectory -ProjectName $SlnItem.Name -Directory $SlnItem.FullName
+    # $UProjectSln is a directory, try to find the correct .sln to use
+    $UProjectSln =& FindSlnInDirectory -ProjectName $UProjectSln.Name -Directory $UProjectSln.FullName
 
-    # We expect an exception will already have been thrown when !$SlnItem,
+    # We expect an exception will already have been thrown when !$UProjectSln,
     # but just to drive this point, here it is explicitly:
-    if (!$SlnItem) { throw "SlnItem is null" };
+    if (!$UProjectSln) { throw "UProjectSln is null" };
 }
 
 
-Write-Debug "SlnItem=$SlnItem"
+Write-Debug "UProjectSln=$UProjectSln"
 
-return $SlnItem
+return $UProjectSln
