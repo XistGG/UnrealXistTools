@@ -1,12 +1,14 @@
 #
 # VS.ps1
 #
-# Open Visual Studio for the given Sln
+# Invoke Visual Studio
 #
 
 [CmdletBinding()]
 param(
-    [Parameter()]$Path
+    [Switch]$Diff,
+    [Switch]$Test,
+    [Parameter(ValueFromRemainingArguments)]$Args
 )
 
 
@@ -14,12 +16,39 @@ param(
 $VisualStudioPath = $env:VisualStudioPath ? $env:VisualStudioPath :
     "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\devenv.exe"
 
+$ScriptName = $MyInvocation.MyCommand.Name
+
+
+################################################################################
+##  -Diff file1 file2
+################################################################################
+
+if ($Diff)
+{
+    if ($Args.Count -ne 2)
+    {
+        Write-Error "Usage: $ScriptName -diff file1 file2"
+        throw "Invalid argument count: $($Args.Count); expect 2"
+    }
+
+    $file1 = $Args[0]
+    $file2 = $Args[1]
+
+    Write-Debug "Diff [$file1] with [$file2]"
+
+    if (!$Test)
+    {
+        & $VisualStudioPath /diff $file1 $file2 "First:$file1" "Second:$file2"
+    }
+    exit 0;
+}
 
 ################################################################################
 ##  Main
 ################################################################################
 
-# Require a valid $UProjectSln
+# If there is an argument, it's a custom $Path
+$Path = $Args.Count ? $Args[0] : $null
 
 Write-Debug "Compute UProjectSln Path=[$Path]"
 
@@ -27,10 +56,13 @@ $UProjectSln =& $PSScriptRoot/UProjectSln.ps1 -Path:$Path
 
 if (!$UProjectSln -or !$UProjectSln.Exists)
 {
-    throw "Path is not a Solution: $Path"
+    throw "Path is not a Solution: [$Path]"
 }
 
 
 # Start Visual Studio for the selected UProjectSln
 
-& $VisualStudioPath $UProjectSln.FullName
+if (!$Test)
+{
+    & $VisualStudioPath $UProjectSln.FullName
+}
