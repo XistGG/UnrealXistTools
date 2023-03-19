@@ -98,6 +98,10 @@ Start Unreal Editor: Open the `.uproject` associated with the current directory.
 
 Alias for `UnrealVersionSelector.ps1 -Editor $(&UProjectFile.ps1 -Path:$Path).FullName`
 
+Note that as this uses `UnrealVersionSelector` under the hood, you must have compiled your
+editor and project in `Development Editor` mode.  When opening a project in editor, the
+underlying UVS requires that we use a Development editor.
+
 Supports the `-Debug` flag, add it to any command to gain more insight.
 
 
@@ -183,6 +187,11 @@ Open the `.sln` file in the current directory:
 VS.ps1
 ```
 
+Diff 2 files (for example can be used from `p4v` as the diff tool)
+```powershell
+VS.ps1 -diff file1 file2
+```
+
 
 --------------------------------------------------------------------------------
 
@@ -201,10 +210,12 @@ See `-Help` for more Usage info.
 
 ### Usage Examples
 
+Display a list of all custom engines on this system:
 ```powershell
 UEngine.ps1 -List
 ```
 
+Rename the `OldRandomGUIDName` custom engine as `MyEngine`
 ```powershell
 UEngine.ps1 OldRandomGUIDName -NewName MyEngine
 ```
