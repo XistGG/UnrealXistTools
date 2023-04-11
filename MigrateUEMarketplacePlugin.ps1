@@ -55,7 +55,7 @@ if (!$ToItem -or !$ToItem.PSIsContainer)
 
 
 ################################################################################
-##
+##  Init Directory Vars
 ################################################################################
 
 $FromEngineDir = Join-Path $FromItem.FullName "Engine"
