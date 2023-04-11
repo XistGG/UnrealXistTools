@@ -36,6 +36,8 @@ Main Branch: https://github.com/XistGG/UnrealXistTools/
 
 # Engine Tools
 
+- [MigrateUEMarketplacePlugin.ps1](#migrateuemarketplacepluginps1)
+  - Migrate a C++ plugin from one Engine version to another
 - [UEngine.ps1](#uengineps1)
   - View and Modify Custom Engine Builds *(read/write Epic's Windows registry keys)*
 
@@ -194,6 +196,41 @@ VS.ps1 -diff file1 file2
 
 
 --------------------------------------------------------------------------------
+
+
+# MigrateUEMarketplacePlugin.ps1
+
+[view source: MigrateUEMarketplacePlugin.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/MigrateUEMarketplacePlugin.ps1)
+
+Required Arguments:
+
+- `-Plugin` Name
+- `-From` PathToSourceEngineRoot
+- `-To` PathToDestinationEngineRoot
+
+Optional Arguments:
+
+- `-Debug`
+  - If present, this switch causes additional debugging output to be written
+- `-Force`
+  - If the destination plugin already exists, forcefully remove it and overwrite with the newly built plugin
+  - If this switch is not present, the script will abort rather than overwrite an existing plugin
+
+### Usage Examples
+
+```powershell
+MigrateUEMarketplacePlugin.ps1 -Plugin AutoSizeComments -From "E:/EpicLauncher/UE_5.1" -To "E:/MyEngine_5.2" -Debug -Force
+MigrateUEMarketplacePlugin.ps1 -Plugin BlueprintAssist -From "E:/EpicLauncher/UE_5.1" -To "E:/MyEngine_5.2" -Debug -Force
+MigrateUEMarketplacePlugin.ps1 -Plugin VisualStudioTools -From "E:/EpicLauncher/UE_5.1" -To "E:/MyEngine_5.2" -Debug -Force
+```
+
+In the above example, you would have told the Epic Games Launcher to install UE 5.1 into
+the folder `E:/EpicLauncher/UE_5.1`
+and you would have installed these plugins from the UE Marketplace into the UE 5.1 Engine.
+
+These commands would then copy 3 plugins from the UE Marketplace into your custom engine
+at `E:/MyEngine_5.2`
+including `AutoSizeComments`, `BlueprintAssist` and `VisualStudioTools`.
 
 
 # UEngine.ps1
