@@ -241,7 +241,8 @@ including `AutoSizeComments`, `BlueprintAssist` and `VisualStudioTools`.
 - `-List` lists all available custom engines
 - `-Name` selects from available custom engines
 - `-NewName` renames an engine to your choice of names
-- `-Project` selects the engine associated with the given .uproject
+- `-UProject` selects the engine associated with the given .uproject
+- `-Start` starts the engine editor (Win64 only)
 
 See `-Help` for more Usage info.
 
