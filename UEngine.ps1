@@ -20,10 +20,14 @@ param(
     [Parameter()]$UProject,
     [switch]$Help,
     [switch]$List,
-    [switch]$NoDefault
+    [switch]$NoDefault,
+    [switch]$Start
 )
 
 $BuildsRegistryKey = "HKEY_CURRENT_USER\Software\Epic Games\Unreal Engine\Builds"
+
+# TODO this only works on Win64! Need to upgrade this for other dev platforms
+$PlatformSpecificEditorPath = "Engine/Binaries/Win64/UnrealEditor.exe"
 
 
 if ($Help)
@@ -43,7 +47,11 @@ if ($Help)
 
 & $ScriptName Name
 
-    Return the Named engine build, returns null if no such Name.
+    Return the Named engine, returns null if no such Name.
+
+& $ScriptName Name -Start
+
+    Start the Named engine in Editor mode.
 
 & $ScriptName Name -NewName MyEngine
 
@@ -292,6 +300,25 @@ if ($UEngine)
     if ($NewName)
     {
         $UEngine =& ChangeEngineRegistryName -UEngine:$UEngine -NewName:$NewName
+    }
+    elseif ($Start)
+    {
+        # Start the Engine by invoking the application at its file path
+        $ExePath = $UEngine.Root + "/" + $PlatformSpecificEditorPath
+        $ExeItem = Get-Item $ExePath 2> $null
+
+        # If there is no such file path, error
+        if (!$ExeItem -or !$ExeItem.Exists)
+        {
+            Write-Error "Engine $($UEngine.Name) editor executable does not exist, maybe you need to build it?"
+            throw "Engine Editor Path does not exist: $ExePath"
+        }
+
+        # Start the Engine using its absolute pathname
+        Write-Debug "Starting Engine ($($UEngine.Name)) Editor: $($ExeItem.FullName)"
+
+        & $ExeItem.FullName
+        return  # explicitly suppress the usual returning of an object when using -Start
     }
 }
 elseif ($Name)
