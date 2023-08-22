@@ -230,26 +230,29 @@ function DuplicateSourceFile()
         # Create a Regex that looks for the OLD code prefix so we know to rewrite to the new prefix
         $Regex = '(class|struct|enum|enum\s+class)\s+([A-Z]+_API\s+)?([AEFSU])(' + $OldCodePrefix + '[a-zA-Z0-9_]*)'
 
-        $m = ([regex]$Regex).Matches($OriginalSource);
+        $m = ([regex]$Regex).Matches($OriginalSource)
         if ($m)
         {
-            $MatchType = $m.groups[1].Value
-            $NamePrefix = $m.groups[3].Value
-            $OldName = $m.groups[4].Value
-            $NewName = RefactorNames $OldName
-
-            # convert 'enum class' to 'enum'
-            # nothing else is affected by this
-            $MatchType = ($MatchType -split '\s+')[0]
-
-            Write-Debug "REDIRECT MATCH [$($m[0])] ($MatchType($NamePrefix)) [$OldName]->[$NewName]"
-
-            if (!$CoreRedirects.ContainsKey($MatchType))
+            for ($i = 0; $i -lt $m.count; $i++)
             {
-                $CoreRedirects[$MatchType] = @{}
-            }
+                $MatchType = $m[$i].groups[1].Value
+                $NamePrefix = $m[$i].groups[3].Value
+                $OldName = $m[$i].groups[4].Value
+                $NewName = RefactorNames $OldName
 
-            $CoreRedirects[$MatchType][$OldName] = $NewName
+                # convert 'enum class' to 'enum'
+                # nothing else is affected by this
+                $MatchType = ($MatchType -split '\s+')[0]
+
+                Write-Debug "REDIRECT MATCH [$($m[0])] ($MatchType($NamePrefix)) [$OldName]->[$NewName]"
+
+                if (!$CoreRedirects.ContainsKey($MatchType))
+                {
+                    $CoreRedirects[$MatchType] = @{}
+                }
+
+                $CoreRedirects[$MatchType][$OldName] = $NewName
+            }
         }
     }
 }
