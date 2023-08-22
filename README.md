@@ -210,6 +210,9 @@ Required Arguments:
 
 Optional Arguments:
 
+- `-ToThirdParty`
+  - If present, causes the plugin to be migrated to your `Plugins/ThirdParty` directory rather
+    than to the default `Plugins/Marketplace`
 - `-Debug`
   - If present, this switch causes additional debugging output to be written
 - `-Force`

@@ -24,9 +24,10 @@
 param(
     [switch]$Force,
     [switch]$NoCleanup,
-    [Parameter()]$Plugin,
-    [Parameter()]$From,
-    [Parameter()]$To
+    [Parameter(Mandatory)]$Plugin,
+    [Parameter(Mandatory)]$From,
+    [Parameter(Mandatory)]$To,
+    [switch]$ToThirdParty
 )
 
 
@@ -54,6 +55,17 @@ if (!$ToItem -or !$ToItem.PSIsContainer)
 }
 
 
+# Make sure $ToPluginSubdir is either 'ThirdParty' or the default 'Marketplace'
+if ($ToThirdParty)
+{
+    $ToPluginSubdir = 'ThirdParty'
+}
+else
+{
+    $ToPluginSubdir = 'Marketplace'
+}
+
+
 ################################################################################
 ##  Init Directory Vars
 ################################################################################
@@ -64,7 +76,7 @@ $ToEngineDir = Join-Path $ToItem.FullName "Engine"
 $ToUAT = Join-Path $ToEngineDir "Build" "BatchFiles" "RunUAT.bat"
 
 $FromPluginDir = Join-Path $FromEngineDir "Plugins" "Marketplace" $Plugin
-$ToPluginDir = Join-Path $ToEngineDir "Plugins" "Marketplace" $Plugin
+$ToPluginDir = Join-Path $ToEngineDir "Plugins" $ToPluginSubdir $Plugin
 
 
 ################################################################################
@@ -100,7 +112,15 @@ if ($ToPluginDirItem -and $ToPluginDirItem.Exists)
         throw "Destination Plugin directory exists [$ToPluginDir]. Use -Force to remove it, or remove it yourself and try again."
     }
 
+    # Try to remove the dir
     Remove-Item -Path $ToPluginDir -Force -Recurse
+
+    # Check to make sure it's actually removed
+    $ToPluginDirItem = Get-Item $ToPluginDir 2> $null
+    if ($ToPluginDirItem -and $ToPluginDirItem.Exists)
+    {
+        throw "Failed to remove existing directory [$ToPluginDir]"
+    }
 }
 
 
@@ -155,6 +175,21 @@ try
     if ($e -ne 0)
     {
         throw "UAT exited with error code $e"
+    }
+
+    # Make sure the parent directory of the proposed $ToPluginDir exists.
+    # Make it if it does not.
+
+    $ParentDirPath = Split-Path $ToPluginDir
+    $ParentDir = Get-Item -Path $ParentDirPath 2> $null  # squelch errors
+
+    if (!$ParentDir -or !$ParentDir.Exists)
+    {
+        $ParentDirItem = New-Item -Path $ParentDirPath -Type 'directory'
+        if (!$ParentDirItem -or !$ParentDirItem.Exists)
+        {
+            throw "Cannot create directory [$ParentDirPath]"
+        }
     }
 
     # Move the newly built plugin to the destination Engine
