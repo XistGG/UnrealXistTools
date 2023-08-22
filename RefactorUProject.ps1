@@ -80,7 +80,12 @@ if ($ToItem -and $ToItem.Exists)
     {
         Write-Debug "Removing existing -To dir (due to -Force)..."
         Remove-Item -Path $ToItem.FullName -Recurse -Force
-        $ToItem = $null
+        $ToItem = Get-Item -Path $To 2> $null
+
+        if ($ToItem)
+        {
+            throw "Failed to delete directory"
+        }
     }
     else
     {
