@@ -368,9 +368,6 @@ function DuplicateUnrealModule()
         }
         elseif ($Dir.Name -ieq 'Plugins')
         {
-            # The root 'Plugins' dir in the To module
-            $ToPluginsDir = Join-Path $ToDir $Dir.Name
-
             foreach ($PluginDir in Get-ChildItem -Path $Dir -Directory)
             {
                 if (    ($PluginDir.Name -ieq 'GameFeatures') `
@@ -378,19 +375,19 @@ function DuplicateUnrealModule()
                 )
                 {
                     # GameFeatures and Developer plugins are special
-                    $ToSpecialPluginsDir = Join-Path $ToPluginsDir $PluginDir.Name
-                    foreach ($PluginDir in Get-ChildItem -Path $PluginDir -Directory)
+                    $ToSpecialPluginsDir = Join-Path $ToDir $PluginDir.Name
+                    foreach ($SubPluginDir in Get-ChildItem -Path $PluginDir -Directory)
                     {
                         # The specific Plugins dir for this plugin the To module
-                        $TempTo = Join-Path $ToSpecialPluginsDir $PluginDir.Name
-                        DuplicateUnrealModule -FromModule $PluginDir.FullName -ToModule $TempTo
+                        $TempTo = Join-Path $ToSpecialPluginsDir $SubPluginDir.Name
+                        DuplicateUnrealModule -FromModule $SubPluginDir.FullName -ToModule $TempTo
                     }
                 }
                 else
                 {
                     # Every other type of plugin is like this:
                     # The specific Plugins dir for this plugin the To module
-                    $TempTo = Join-Path $ToPluginsDir $PluginDir.Name
+                    $TempTo = Join-Path $ToDir $PluginDir.Name
                     DuplicateUnrealModule -FromModule $PluginDir.FullName -ToModule $TempTo
                 }
             }
