@@ -17,6 +17,24 @@
 #   fix any assets that need to be fixed and coordinate their names
 #   with the INIs and C++.
 #
+# Example:
+#
+####
+##
+## ## Clone https://github.com/XistGG/XistCommonGameSample and then refactor it
+## RefactorUProject.ps1 -From D:/Github/XistCommonGameSample -To D:/Temp/NewGame -OldPackageName XistCommonGameSample -NewPackageName NewProject -OldCodePrefix Xcgs -NewCodePrefix Noob -Debug -Force
+##
+## ## Generate project files
+## UProjectClean.ps1 D:/Temp/NewGame/NewProject.uproject
+##
+## ## Open Rider, Build "NewProject" project
+## rider D:/Temp/NewGame/NewProject.uproject
+##
+## ## Run game from Rider
+## ## RE-SAVE ALL BINARY ASSETS
+## ## Now it's safe to remove the [CoreRedirects] in NewProject's Config/DefaultEngine.ini
+##
+####
 
 [CmdletBinding()]
 param(
