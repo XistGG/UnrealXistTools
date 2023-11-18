@@ -25,6 +25,9 @@ param(
     [Parameter(ValueFromRemainingArguments=$true)] $VarArgs
 )
 
+# Make sure the powershell version is good, or throw an exception
+& $PSScriptRoot/PSVersionCheck.ps1
+
 $UProjectFile = & $PSScriptRoot\UProjectFile.ps1 -Path:$UProjectFile
 
 $ScriptName = $MyInvocation.MyCommand.Name

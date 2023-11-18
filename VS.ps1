@@ -11,6 +11,8 @@ param(
     [Parameter(ValueFromRemainingArguments)]$Args
 )
 
+# Make sure the powershell version is good, or throw an exception
+& $PSScriptRoot/PSVersionCheck.ps1
 
 # Set $env:VisualStudioPath to override the default value
 $VisualStudioPath = $env:VisualStudioPath ? $env:VisualStudioPath :

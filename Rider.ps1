@@ -15,6 +15,9 @@ param(
     [switch]$Sln
 )
 
+# Make sure the powershell version is good, or throw an exception
+& $PSScriptRoot/PSVersionCheck.ps1
+
 # Set $env:RiderCommand to override the default value
 $RiderCommand = $env:RiderCommand ? $env:RiderCommand : "Rider1"
 

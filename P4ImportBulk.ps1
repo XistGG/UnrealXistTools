@@ -31,6 +31,8 @@ param(
     [Parameter()]$MaxLines=-1
 )
 
+# Make sure the powershell version is good, or throw an exception
+& $PSScriptRoot/PSVersionCheck.ps1
 
 $ScriptName = $MyInvocation.MyCommand.Name
 

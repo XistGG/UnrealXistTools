@@ -18,6 +18,8 @@ param (
     [switch] $Full
 )
 
+# Make sure the powershell version is good, or throw an exception
+& $PSScriptRoot/PSVersionCheck.ps1
 
 # Read p4 info (Full version or -s version)
 $P4Output = $Full ? (p4 info) : (p4 info -s)

@@ -24,6 +24,9 @@ param(
     [switch]$Start
 )
 
+# Make sure the powershell version is good, or throw an exception
+& $PSScriptRoot/PSVersionCheck.ps1
+
 $BuildsRegistryKey = "HKEY_CURRENT_USER\Software\Epic Games\Unreal Engine\Builds"
 
 # TODO this only works on Win64! Need to upgrade this for other dev platforms
@@ -39,6 +42,10 @@ if ($Help)
 ##
 ##  Usage for ${ScriptName}:
 ##
+
+& $ScriptName -Debug
+
+    Use the -Debug flag at any time to see more detailed debug info.
 
 & $ScriptName -List
 
@@ -57,6 +64,9 @@ if ($Help)
 
     Change the name of the "Name" engine to "MyEngine".
     Return the build with the updated name.
+
+    Note that for random GUID names, you need to enclose it in quotes, like:
+    $ScriptName "{Random-GUID-here}" -NewName MyEngine
 
 & $ScriptName -NoDefault
 

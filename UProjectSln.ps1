@@ -19,6 +19,8 @@ param(
     [Parameter()]$Path
 )
 
+# Make sure the powershell version is good, or throw an exception
+& $PSScriptRoot/PSVersionCheck.ps1
 
 function FindSlnInDirectory()
 {
