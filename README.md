@@ -246,19 +246,20 @@ including `AutoSizeComments`, `BlueprintAssist` and `VisualStudioTools`.
 - `-NewName` renames an engine to your choice of names
 - `-UProject` selects the engine associated with the given .uproject
 - `-Start` starts the engine editor (Win64 only)
+- `-Debug` enables more detailed debug information
 
 See `-Help` for more Usage info.
 
 ### Usage Examples
 
-Display a list of all custom engines on this system:
+Display a list of all custom engines on this system with debug info:
 ```powershell
-UEngine.ps1 -List
+UEngine.ps1 -List -Debug
 ```
 
 Rename the `OldRandomGUIDName` custom engine as `MyEngine`
 ```powershell
-UEngine.ps1 OldRandomGUIDName -NewName MyEngine
+UEngine.ps1 "OldRandomGUIDName" -NewName MyEngine
 ```
 
 
