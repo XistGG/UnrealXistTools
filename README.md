@@ -54,6 +54,9 @@ Main Branch: https://github.com/XistGG/UnrealXistTools/
 
 # P4 Tools
 
+- [P4Config.ps1](#p4configps1)
+  - Locate and import `.p4config` in the given Path or one of its parents
+  - `-Export` the config to the system environment *(optional)*
 - [P4EncodePath.ps1](#p4encodepathps1)
   - Encode (or `-Decode`) paths for P4
 - [P4ImportBulk.ps1](#p4importbulkps1)
@@ -348,6 +351,35 @@ UProjectSln.ps1 project.sln
 
 
 --------------------------------------------------------------------------------
+
+# P4Config.ps1
+
+[view source: P4Config.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/P4Config.ps1)
+
+This helpful script can be used before you launch an IDE or other build tool
+that requires access to P4 but isn't smart enough to understand that you
+have multiple projects existing in the same depot (e.g. a custom Engine *and* a UProject)
+and you just want a single `.p4config` in the workspace root that is effective for all
+the projects in that workspace.
+
+- `-Path` is an optional path to work in *(Default: Current directory)*
+- `-Export` causes the found `.p4config` file *(if any)* to be exported to the system environment
+- `-Debug` provides helpful debugging info
+
+## Usage
+
+Find, parse and return the `.p4config` relevant to the current directory:
+
+```powershell
+P4Config.ps1 -Debug
+```
+
+Find, parse and inject the `.p4config` relevant to the current directory
+into the system environment for the current powershell process:
+
+```powershell
+P4Config.ps1 -Export -Debug
+```
 
 
 # P4EncodePath.ps1
