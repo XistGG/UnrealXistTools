@@ -66,5 +66,8 @@ if (!$UProjectSln -or !$UProjectSln.Exists)
 
 if (!$Test)
 {
+    # Locate a .p4config and export it to the system environment before starting Rider
+    & $PSScriptRoot/P4Config.ps1 -Export -Path $UProjectSln.Directory.FullName
+
     & $VisualStudioPath $UProjectSln.FullName
 }

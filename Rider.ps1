@@ -58,8 +58,9 @@ else
 }
 
 
+# Locate a .p4config and export it to the system environment before starting Rider
+& $PSScriptRoot/P4Config.ps1 -Export -Path $RiderFile.Directory.FullName
+
 # Start Rider in the requested mode
-
 Write-Debug "EXEC: Rider [$RiderCommand] on [$($RiderFile.FullName)]"
-
 & $RiderCommand $RiderFile.FullName
