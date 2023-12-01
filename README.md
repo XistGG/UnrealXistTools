@@ -76,8 +76,9 @@ Main Branch: https://github.com/XistGG/UnrealXistTools/
 - Delete all `Binaries` (generated data)
 - Delete all `Intermediate` (generated data)
 - Delete all `*.sln` (generated data)
-- Delete all `.idea` (if you set `-Idea` switch)
-- Delete all `DerivedDataCache` (if you set `-DDC` switch)
+- Delete all `.idea` (if you set `-Idea` switch or `-Nuke`)
+- Delete `DerivedDataCache` (if you set `-DDC` switch or `-Nuke`)
+- Delete `Saved` (if you set `-Saved` switch or `-Nuke`)
 - Generate Project Files
 
 Supports the `-Debug` flag, add it to any command to gain more insight.
@@ -92,6 +93,11 @@ UProjectClean.ps1
 Clean a specific `MyGame.uproject`:
 ```powershell
 UProjectClean.ps1 MyGame.uproject
+```
+
+Clean (NUKE) the project in the current directory: *(implies flags `-DDC`, `-Idea`, `-Saved`)*
+```powershell
+UProjectClean.ps1 -Nuke
 ```
 
 

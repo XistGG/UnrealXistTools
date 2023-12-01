@@ -7,8 +7,9 @@
 #
 #   - Remove Binaries dirs
 #   - Remove Intermediate dirs
-#   - Remove DerivedDataCache dirs (only if -DDC switch)
-#   - Remove .idea directories (only if -Idea switch)
+#   - Remove DerivedDataCache dirs (only if -DDC switch or -Nuke)
+#   - Remove Saved dir (only if -Saved switch or -Nuke)
+#   - Remove .idea directories (only if -Idea switch or -Nuke)
 #   - Remove *.sln files from the project root
 #   - Generate Project Files
 #
@@ -18,6 +19,8 @@ param(
     [switch]$DryRun,
     [switch]$Idea,
     [switch]$DDC,
+    [switch]$Nuke,
+    [switch]$Saved,
     [Parameter()]$Path
 )
 
@@ -31,6 +34,14 @@ $UProjectFile = & $PSScriptRoot\UProjectFile.ps1 -Path:$Path
 if (!$UProjectFile)
 {
     throw "No UProjectFile selected for clean"
+}
+
+# If the -Nuke switch is set, then explicitly set all the optional deletion flags
+if ($Nuke)
+{
+    $DDC = $true;
+    $Idea = $true;
+    $Saved = $true;
 }
 
 
@@ -50,6 +61,14 @@ $TempDirs = Get-ChildItem -Path $UProjectFile.Directory -Directory -Recurse `
           -or (($_.Name -ieq 'DerivedDataCache') -and $DDC) `
           -or (($_.Name -ieq '.idea') -and $Idea) `
       }
+
+# Only nuke the Saved folder in the root uproject directory
+# if the -Saved switch is explicitly set
+if ($Saved)
+{
+    $TempDirs += Get-ChildItem -Path $UProjectFile.Directory -Directory `
+        | Where-Object {$_.Name -ieq 'Saved'}
+}
 
 # *.sln files in the root folder
 $TempFiles = Get-ChildItem -Path $UProjectFile.Directory -File `
