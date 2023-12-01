@@ -13,6 +13,25 @@ Main Branch: https://github.com/XistGG/UnrealXistTools/
 - Clone this repository
 - Add this repository clone folder to your `$env:PATH`
 
+### PowerShell Execution Policy Notice
+
+The first time you try to set this up, you may get an error regarding PowerShell execution policy.
+
+By default, Windows wants to protect you from yourself.
+To configure your system to run PowerShell scripts, you need to explicitly set your
+PowerShell execution policy.
+
+For example if you want to use my settings, you can do:
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
+
+Mine is set to `RemoteSigned` and these scripts all run fine.
+Note that you must be responsible to ensure you only run PowerShell that you trust!
+
+Also I am no PowerShell security expert, so if you are concerned about this,
+I encourage you to research it further on your own.
+
 
 # Build Tools
 
