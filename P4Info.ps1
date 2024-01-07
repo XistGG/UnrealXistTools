@@ -10,6 +10,7 @@
 #           so you can for example `P4Info.ps1 -config > .p4config`
 #   -Full switch causes a full query of p4 info, including items that
 #         require database lookups.  Disabled by default.
+#   -Debug switch shows extra debugging output to help diagnose problems.
 #
 
 [CmdletBinding()]
@@ -20,6 +21,8 @@ param (
 
 # Make sure the powershell version is good, or throw an exception
 & $PSScriptRoot/PSVersionCheck.ps1
+
+Write-Debug "Executing 'p4 info'..."
 
 # Read p4 info (Full version or -s version)
 $P4Output = $Full ? (p4 info) : (p4 info -s)
