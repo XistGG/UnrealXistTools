@@ -83,7 +83,9 @@ I encourage you to research it further on your own.
     (tested by importing 800k+ files from UDN P4 `//UE5/Release-5.2`)
 - [P4Info.ps1](#p4infops1)
   - Makes it real easy to extract `p4 info` values
-
+- [P4Reunshelve.ps1](#p4reunshelveps1)
+  - Easy repetitive "revert changes and re-unshelve"
+  - Useful when coding on 1 workstation and testing on multiple other workstations
 
 --------------------------------------------------------------------------------
 
@@ -456,3 +458,35 @@ P4Info.ps1 -Config > .p4config
 
 Try the `-Debug` switch to see the parse info.
 
+
+# P4Reunshelve.ps1
+
+[view source: P4Reunshelve.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/P4Reunshelve.ps1)
+
+"Reunshelve" will repeatedly unshelve files into the current workspace.
+
+This script will revert *ALL* changes in your current workspace (it will
+prompt you for every file unless you `-Force`) and will then unshelve the
+`-SCL` changelist into the current workspace.
+
+I use this for example when I am testing on multiple workstations
+simultaneously.  On my primary workstation I make changes, when I'm ready
+to test, I shelve the changes, then on the other workstations I run this
+script.  The other workstations never have modifications other than the
+unshelved changes, I just repeatedly "re-unshelve", discarding whatever
+the previous shelved files were and replacing them with the new variant.
+
+```powershell
+P4Reunshelve.ps1 -SCL 123
+```
+
+The above command will unshelve the files from CL# 123, prompting you
+for each and every file before it reverts anything.
+
+```powershell
+P4Reunshelve.ps1 -Force -SCL 123
+```
+
+**WARNING:** The above command with the `-Force` flag will revert **all changes**
+in **all changelists** in your current workspace without prompting you
+for confirmation.  It will then unshelve CL# 123.
