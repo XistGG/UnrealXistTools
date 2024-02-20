@@ -94,6 +94,8 @@ I encourage you to research it further on your own.
 
 [view source: UProjectClean.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/UProjectClean.ps1)
 
+Compatibility: Windows only
+
 - Delete all `Binaries` (generated data)
 - Delete all `Intermediate` (generated data)
 - Delete all `*.sln` (generated data)
@@ -126,6 +128,8 @@ UProjectClean.ps1 -Nuke
 
 [view source: UEdit.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/UEdit.ps1)
 
+Compatibility: Windows only
+
 Start Unreal Editor: Open the `.uproject` associated with the current directory.
 
 Alias for `UnrealVersionSelector.ps1 -Editor $(&UProjectFile.ps1 -Path:$Path).FullName`
@@ -153,6 +157,8 @@ UEdit.ps1 path/to/project
 # UnrealVersionSelector.ps1
 
 [view source: UnrealVersionSelector.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/UnrealVersionSelector.ps1)
+
+Compatibility: Windows only
 
 - Allows developer to refer to `.uproject` files via relative paths
 - Infers the name of `.uproject` files based on current directory
@@ -187,6 +193,8 @@ UnrealVersionSelector.ps1 -SwitchVersionSilent /Project/Root/Engine/Binaries/../
 
 [view source: Rider.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/Rider.ps1)
 
+Compatibility: Mac + Windows
+
 Start Rider: Open the `.uproject` associated with the current directory.
 
 Supports the `-Debug` flag, add it to any command to gain more insight.
@@ -207,6 +215,8 @@ Rider.ps1 -sln
 # VS.ps1
 
 [view source: VS.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/VS.ps1)
+
+Compatibility: Windows only
 
 Start Visual Studio: Open the `.sln` associated with the current directory.
 
@@ -231,6 +241,8 @@ VS.ps1 -diff file1 file2
 # MigrateUEMarketplacePlugin.ps1
 
 [view source: MigrateUEMarketplacePlugin.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/MigrateUEMarketplacePlugin.ps1)
+
+Compatibility: Mac + Windows
 
 Required Arguments:
 
@@ -270,6 +282,8 @@ including `AutoSizeComments`, `BlueprintAssist` and `VisualStudioTools`.
 
 [view source: UEngine.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/UEngine.ps1)
 
+Compatibility: Windows only
+
 - By default selects the engine used by the current or named project
 - `-List` lists all available custom engines
 - `-Name` selects from available custom engines
@@ -300,6 +314,8 @@ UEngine.ps1 "OldRandomGUIDName" -NewName MyEngine
 
 [view source: UProject.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/UProject.ps1)
 
+Compatibility: Mac + Windows
+
 Returns JSON parsed contents of `$UProjectFile` as a PowerShell Object
 
 Supports the `-Debug` flag, add it to any command to gain more insight.
@@ -320,6 +336,8 @@ $(UProject.ps1 project.uproject).EngineAssociation
 # UProjectFile.ps1
 
 [view source: UProjectFile.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/UProjectFile.ps1)
+
+Compatibility: Mac + Windows
 
 Returns the `.uproject` file relevant to the `-Path`
 (implicit first string parameter, or current directory by default).
@@ -350,6 +368,8 @@ UProjectFile.ps1 project.uproject
 # UProjectSln.ps1
 
 [view source: UProjectSln.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/UProjectSln.ps1)
+
+Compatibility: Windows only
 
 Returns the `.sln` file relevant to the `-Path`
 (implicit first string parameter, or current directory by default).
@@ -383,6 +403,8 @@ UProjectSln.ps1 project.sln
 
 [view source: P4Config.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/P4Config.ps1)
 
+Compatibility: Mac + Windows
+
 This helpful script can be used before you launch an IDE or other build tool
 that requires access to P4 but isn't smart enough to understand that you
 have multiple projects existing in the same depot (e.g. a custom Engine *and* a UProject)
@@ -413,6 +435,8 @@ P4Config.ps1 -Export -Debug
 
 [view source: P4EncodePath.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/P4EncodePath.ps1)
 
+Compatibility: Mac + Windows
+
 Encodes or Decodes a P4 path.  See `-Help` for more details.
 
 See [P4 filespecs](https://www.perforce.com/manuals/cmdref/Content/CmdRef/filespecs.html)
@@ -424,6 +448,8 @@ See `-Help` for Usage.
 # P4ImportBulk.ps1
 
 [view source: P4ImportBulk.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/P4ImportBulk.ps1)
+
+Compatibility: Mac + Windows (only tested on Windows)
 
 Import a massive number of files into a new depot without breaking P4.
 
@@ -441,6 +467,8 @@ See `-Help` for Usage.
 # P4Info.ps1
 
 [view source: P4Info.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/P4Info.ps1)
+
+Compatibility: Mac + Windows
 
 Extracts `p4 info` output into a Dictionary, which it returns as the result.
 
@@ -462,6 +490,8 @@ Try the `-Debug` switch to see the parse info.
 # P4Reunshelve.ps1
 
 [view source: P4Reunshelve.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/P4Reunshelve.ps1)
+
+Compatibility: Mac + Windows
 
 "Reunshelve" will repeatedly unshelve files into the current workspace.
 
