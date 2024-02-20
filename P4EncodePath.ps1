@@ -18,9 +18,12 @@ param(
 # Make sure the powershell version is good, or throw an exception
 & $PSScriptRoot/PSVersionCheck.ps1
 
+# Import the P4 helper module
+Import-Module -Name $PSScriptRoot/Modules/P4.psm1
+
 $ThisScript = $MyInvocation.MyCommand.Path
 $ScriptName = $MyInvocation.MyCommand.Name
-$ScaryPath = "//tmp/scary/name/! -+ 's #%*:@"
+$ScaryPath = "//tmp/scary/name/! -+ 's #%25*:@"
 
 
 function GetHelpOutput()
@@ -65,8 +68,8 @@ if ($Help)
 
 if ($Test)
 {
-    $EncodedScaryPath =& $ThisScript -Path $ScaryPath
-    $DecodedEncoded =& $ThisScript -Decode -Path $EncodedScaryPath
+    $EncodedScaryPath =& P4_EncodePath $ScaryPath
+    $DecodedEncoded =& P4_DecodePath $EncodedScaryPath
 
     Write-Host "Starting Path: $ScaryPath"
     Write-Host "Encoded Path: $EncodedScaryPath"
@@ -98,21 +101,11 @@ $Result = $null
 
 if ($Decode)
 {
-    # `p4 add -m` writes filenames in an Encoded format, so we need to decode it
-    $Result = $Path -ireplace '%23','#' `
-                    -ireplace '%25','%' `
-                    -ireplace '%2A','*' `
-                    -ireplace '%3A',':' `
-                    -ireplace '%40','@'
+    $Result =& P4_DecodePath $Path
 }
 else
 {
-    # MUST ENCODE '%' CHARACTER BEFORE ANY OTHER !!
-    $Result = $Path -ireplace '%','%25' `
-                    -ireplace '#','%23' `
-                    -ireplace '\*','%2A' `
-                    -ireplace ':','%3A' `
-                    -ireplace '@','%40'
+    $Result =& P4_EncodePath $Path
 }
 
 return $Result

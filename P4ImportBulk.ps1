@@ -35,6 +35,9 @@ param(
 # Make sure the powershell version is good, or throw an exception
 & $PSScriptRoot/PSVersionCheck.ps1
 
+# Import the P4 helper module
+Import-Module -Name $PSScriptRoot/Modules/P4.psm1
+
 $ScriptName = $MyInvocation.MyCommand.Name
 
 $SyncFileItem = Get-Item -Path $SyncFile 2> $null
@@ -287,7 +290,7 @@ function ImportInBatches
 
                 # `p4 add -m` writes filenames in an Encoded format, so we need to decode it
                 # see: https://www.perforce.com/manuals/cmdref/Content/CmdRef/filespecs.html
-                $DecodedPath =& $PSScriptRoot/P4EncodePath.ps1 -Decode -Path $Path
+                $DecodedPath =& P4_DecodePath $Path
 
                 [void] $CurrentBucket.Add($DecodedPath)
 
