@@ -1,3 +1,4 @@
+#!/usr/bin/env pwsh
 #
 # Rider.ps1
 #

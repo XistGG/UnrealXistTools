@@ -1,3 +1,4 @@
+#!/usr/bin/env pwsh
 #
 # P4EncodePath.ps1
 #

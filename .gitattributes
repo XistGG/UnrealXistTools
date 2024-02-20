@@ -7,3 +7,6 @@
 # Linux machine (the default behavior on GitHub)
 *.bat eol=crlf
 *.sh eol=lf
+
+# Mac/Linux require LF line endings for hashbangs to work. Windows doesn't care about ps1 line endings.
+*.ps1 eol=lf

@@ -1,4 +1,5 @@
-# 
+#!/usr/bin/env pwsh
+#
 # UProjectSln.ps1
 #
 # See: https://github.com/XistGG/UnrealXistTools/

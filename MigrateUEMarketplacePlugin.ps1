@@ -1,3 +1,4 @@
+#!/usr/bin/env pwsh
 #
 # MigrateUEMarketplacePlugin.ps1
 #

@@ -1,3 +1,4 @@
+#!/usr/bin/env pwsh
 #
 # UProject.ps1
 #

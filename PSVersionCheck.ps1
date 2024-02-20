@@ -1,4 +1,5 @@
-# 
+#!/usr/bin/env pwsh
+#
 # PSVersionCheck.ps1
 #
 # UnrealXistTools requires PowerShell 7+.

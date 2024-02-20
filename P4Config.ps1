@@ -1,4 +1,5 @@
-# 
+#!/usr/bin/env pwsh
+#
 # P4Config2ENV.ps1
 #
 # See: https://github.com/XistGG/UnrealXistTools/

@@ -1,3 +1,4 @@
+#!/usr/bin/env pwsh
 #
 # Return P4 Info
 #
