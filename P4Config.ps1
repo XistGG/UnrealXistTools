@@ -46,7 +46,7 @@ function FindP4ConfigFile()
     # Try to find .p4config in $Directory
     Write-Debug "Searching for .p4config in: $($dir.FullName)"
     $filename = Join-Path $dir.FullName ".p4config"
-    $p4config = Get-ChildItem -Path $filename -File 2> $null
+    $p4config = Get-ChildItem -Path $filename -File -Force 2> $null
 
     # If we found a .p4config in this $Directory, return it
     if ($p4config -and $p4config.Exists)
