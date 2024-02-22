@@ -215,6 +215,7 @@ function UE_ListCustomEngines
 
     if ($IsLinux)
     {
+        # TODO implement UE_ListCustomEngines for Linux
         throw "Not implemented: UE_ListCustomEngines on Linux"
     }
 
