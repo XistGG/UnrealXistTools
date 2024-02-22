@@ -17,7 +17,7 @@ param(
 & $PSScriptRoot/PSVersionCheck.ps1
 
 # Import the UE helper module
-Import-Module -Name $PSScriptRoot/Modules/UE.psm1 -Force -Verbose
+Import-Module -Name $PSScriptRoot/Modules/UE.psm1
 
 $ScriptName = $MyInvocation.MyCommand.Name
 
