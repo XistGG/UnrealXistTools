@@ -28,13 +28,16 @@ param(
 # Make sure the powershell version is good, or throw an exception
 & $PSScriptRoot/PSVersionCheck.ps1
 
+# Import the UE helper module
+Import-Module -Name $PSScriptRoot/Modules/UE.psm1 -Force -Verbose
+
 $BuildsRegistryKey = "HKEY_CURRENT_USER\Software\Epic Games\Unreal Engine\Builds"
 
 # TODO this only works on Win64! Need to upgrade this for other dev platforms
 $PlatformSpecificEditorPath = "Engine/Binaries/Win64/UnrealEditor.exe"
 
 
-if ($Help)
+function Usage
 {
     $ScriptName = $MyInvocation.MyCommand.Name
     Write-Host @"
@@ -75,168 +78,12 @@ if ($Help)
     Mainly useful for debugging.
 
 "@
-    return $null
+    exit 1
 }
 
-
-# Read $BuildsRegistryKey to discover the list of Engine Builds
-# @return ArrayList with each element being like @{ Name="EngineName"; Root="C:\Root" }
-#
-function ListEngineBuildsInRegistry()
+if ($Help)
 {
-    $RegistryBuilds = Get-Item -Path "Registry::$BuildsRegistryKey" 2> $null
-    $Result = [System.Collections.ArrayList]@()
-
-    if (!$RegistryBuilds)
-    {
-        Write-Warning "Build Registry Not Found: $BuildsRegistryKey"
-    }
-    else
-    {
-        # Must iterate to Length; registry key does not have a Count
-        for ($i = 0; $i -lt $RegistryBuilds.Length; $i++)
-        {
-            $PropertyList = $RegistryBuilds[$i].Property
-
-            # PropertyList is an actual array, it has a Count
-            if ($PropertyList -and $PropertyList.Count -gt 0)
-            {
-                for ($p = 0; $p -lt $PropertyList.Count; $p++)
-                {
-                    $BuildName = $PropertyList[$p]
-
-                    if ($BuildName)
-                    {
-                        # Get the ItemPropertyValue for this $BuildName
-                        $Value = Get-ItemPropertyValue -Path "Registry::$BuildsRegistryKey" -Name $BuildName
-
-                        # Create a Build object
-                        $Build = [pscustomobject]@{ Name=$BuildName; Root=$Value }
-
-                        Write-Debug "Read Engine[$($Result.Count)] [$BuildName] = [$Value]"
-
-                        # Append the build to the $Result array
-                        $Result += $Build
-                    }
-                    else
-                    {
-                        Write-Debug "Skip empty BuildName for RegistryBuilds[$i].Property[$p]"
-                    }
-                }
-            }
-            else
-            {
-                Write-Debug "Skip empty PropertyList for RegistryBuilds[$i]"
-            }
-        }
-    }
-
-    return $Result
-}
-
-
-function SelectEngineRootByRegistry()
-{
-    $Result = $null
-    $EngineBuilds = &ListEngineBuildsInRegistry
-
-    if ($EngineBuilds -and $EngineBuilds.Count -gt 0)
-    {
-        Write-Debug "Registered Engines ($($EngineBuilds.Count)):"
-
-        for ($i = 0; $i -lt $EngineBuilds.Count; $i++)
-        {
-            $Build = $EngineBuilds[$i]
-
-            Write-Debug "  [$i] $($Build.Name) = '$($Build.Root)'"
-
-            # If searching for a specific $Name and it matches this $Build.Name (only match the first)
-            if ($Name -and ($Build.Name -ieq $Name) -and !$Result)
-            {
-                # An explicit $Name search matched
-                $Result = $Build
-
-                Write-Debug "Name search match [$Name]; select result [$i]"
-            }
-        }
-
-        # If we did not find a suitable result, and an explicit search $Name is not set
-        if (!$Result -and !$Name)
-        {
-            if (!$NoDefault)
-            {
-                if ($EngineBuilds.Count -eq 1)
-                {
-                    # There is only 1 custom engine; That is the default
-                    $Result = $EngineBuilds[0]
-                }
-                else
-                {
-                    # Check current directory (and recursively its parents)
-                    # to see if any of them are a registered Engine, and if so
-                    # select the engine whose directory tree we are in.
-
-                    $d = Get-Item -Path $(Get-Location)
-
-                    while ($d -and !$Result)
-                    {
-                        for ($i = 0; $i -lt $EngineBuilds.Count; $i++)
-                        {
-                            # Discard stderr as sometimes this path won't exist, that's fine, don't confuse people with errors to the console
-                            $root = Get-Item -Path $EngineBuilds[$i].Root 2> $null
-
-                            # Check if it exists
-                            if ($root -and ($root.FullName -ieq $d.FullName))
-                            {
-                                # Found this Build root
-                                $Result = $EngineBuilds[$i]
-
-                                Write-Debug "Found Engine[$i].Root: $root"
-
-                                # Don't need to keep searching
-                                break
-                            }
-                            elseif (!$root)
-                            {
-                                Write-Debug "Engine[$i].Root [$($EngineBuilds[$i].Root)] root does not exist [$($EngineBuilds[$i].Root)]"
-                            }
-                            else
-                            {
-                                Write-Debug "Engine[$i].Root [$($EngineBuilds[$i].Root)] not match [$d]"
-                            }
-                        }
-
-                        # Traverse up until there is no more traversing
-                        $d = $d.Parent
-                    }
-                }
-            }
-            else
-            {
-                Write-Debug "Build is not set; not choosing default build due to -NoDefault"
-            }
-        }
-    }
-
-    return $Result
-}
-
-
-function ChangeEngineRegistryName()
-{
-    [CmdletBinding()]
-    param(
-        [Parameter()]$UEngine,
-        [Parameter()]$NewName
-    )
-
-    Write-Debug "Rename $($UEngine.Name) to $NewName"
-
-    Rename-ItemProperty -Path "Registry::$BuildsRegistryKey" -Name $UEngine.Name -NewName $NewName
-
-    $UEngine.Name = $NewName
-
-    return $UEngine
+    & Usage
 }
 
 
@@ -248,12 +95,12 @@ function ChangeEngineRegistryName()
 # If they just want to see a list, show it
 if ($List)
 {
-    $BuildList =& ListEngineBuildsInRegistry
+    $BuildList =& UE_ListCustomEngines
     if (!$BuildList.Count)
     {
-        Write-Error "There are no custom Unreal Engine Builds in the Registry."
-        Write-Error "You need to run UnrealVersionSelector.exe in your Custom Engine Directory."
-        Write-Error "Example: D:/UE_5.1/Engine/Binaries/Win64/UnrealVersionSelector-Win64-Shipping.exe"
+        Write-Error ("There are no custom Unreal Engine Builds in the Registry. " +
+            "You need to run UnrealVersionSelector.exe in your Custom Engine Directory. " +
+            "Example: D:/UE_5.1/Engine/Binaries/Win64/UnrealVersionSelector-Win64-Shipping.exe")
     }
     return $BuildList
 }
@@ -266,12 +113,14 @@ if ($List)
 # If $UProject is set, resolve it
 if ($UProject)
 {
+    Write-Debug "Loading explicitly named UProject `"$UProject`""
     $UProject =& $PSScriptRoot/UProject.ps1 -Path:$UProject
 }
 
 
-# If they didn't supply a specific Engine Name, choose a default Engine if !$NoDefault
-if (!$Name -and !$NoDefault)
+# If they didn't supply an explicit name, but they did supply a $UProject,
+# then use the EngineAssociation from the $UProject
+if (!$Name)
 {
     if (!$UProject)
     {
@@ -279,6 +128,7 @@ if (!$Name -and !$NoDefault)
         {
             # No $UProject was named, so load the default UProject
             # We don't care about errors here, if there is no active project, that's fine
+            Write-Debug "Loading implicitly active UProject based on current directory"
             $UProject =& $PSScriptRoot/UProject.ps1 2> $null
         }
         catch
@@ -288,12 +138,20 @@ if (!$Name -and !$NoDefault)
         }
     }
 
-    if ($UProject)
+    if (!$UProject)
     {
-        $Name = $UProject.EngineAssociation
-
-        Write-Debug "Using '$Name' Engine Name for UProject: $UProjectFile"
+        Write-Error "No -Name provided and no UProject can be deduced"
+        & Usage
     }
+
+    $Name = $UProject.EngineAssociation
+    Write-Debug "Loading Engine based on UProject `"$($UProject._UProjectFile)`" EngineAssociation `"$Name`""
+    $UEngine =& UE_GetEngineByAssociation -UProjectFile $UProject._UProjectFile -EngineAssociation $UProject.EngineAssociation
+}
+else
+{
+    Write-Debug "Loading Engine based on explicit name `"$Name`""
+    $UEngine =& UE_SelectCustomEngine -Name $Name
 }
 
 
@@ -301,49 +159,22 @@ if (!$Name -and !$NoDefault)
 ##  Get/Set the current $UEngine
 
 
-$UEngine =& SelectEngineRootByRegistry
-
 if ($UEngine)
 {
-    Write-Debug "UEngine = $($UEngine.Name) = $($UEngine.Root)"
+    Write-Debug "Selected UEngine: $($UEngine.Name) = $($UEngine.Root)"
 
     # If they want to change the name, do so
     if ($NewName)
     {
-        $UEngine =& ChangeEngineRegistryName -UEngine:$UEngine -NewName:$NewName
-    }
-    elseif ($Start)
-    {
-        # Start the Engine by invoking the application at its file path
-        $ExePath = $UEngine.Root + "/" + $PlatformSpecificEditorPath
-        $ExeItem = Get-Item $ExePath 2> $null
-
-        # If there is no such file path, error
-        if (!$ExeItem -or !$ExeItem.Exists)
-        {
-            Write-Error "Engine $($UEngine.Name) editor executable does not exist, maybe you need to build it?"
-            throw "Engine Editor Path does not exist: $ExePath"
-        }
-
-        # Start the Engine using its absolute pathname
-        Write-Debug "Starting Engine ($($UEngine.Name)) Editor: $($ExeItem.FullName)"
-
-        & $ExeItem.FullName
-        return  # explicitly suppress the usual returning of an object when using -Start
+        Write-Debug "Renaming Engine `"$($UEngine.Name)`" to `"$NewName`""
+        # Try to change the name and reload the engine from the new name
+        $UEngine =& UE_RenameCustomEngine -OldName $UEngine.Name -NewName $NewName
     }
 }
 elseif ($Name)
 {
     # User asked for a specific name that does not exist
     Write-Error "No Such Engine Name: $Name"
-}
-else
-{
-    # User asked for no name in particular, and no default is in effect,
-    # so there is no $UEngine selected.
-
-    # Execute own help
-    return & $PSScriptRoot/UEngine.ps1 -Help
 }
 
 return $UEngine

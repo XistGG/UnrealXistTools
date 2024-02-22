@@ -2,6 +2,14 @@
 # UE.psm1
 #
 
+Import-Module -Name $PSScriptRoot/INI.psm1 -Force -Verbose
+
+# On Mac, custom engine information is stored in this INI file:
+$MacInstallIni = "~/Library/Application Support/Epic/UnrealEngine/Install.ini"
+
+# On Windows, custom engine information is stored in the registry here:
+$WindowsBuildsRegistryKey = "HKEY_CURRENT_USER\Software\Epic Games\Unreal Engine\Builds"
+
 function UE_GetEngineConfig
 {
     param(
@@ -11,60 +19,60 @@ function UE_GetEngineConfig
         [string]$EngineDir
     )
 
-    $ScriptExtension = ".bat"
-    $ExeExtension = ".exe"
-    $Platform = "Win64"
+    $scriptExtension = ".bat"
+    $exeExtension = ".exe"
+    $platform = "Win64"
 
     if ($IsLinux)
     {
-        $ScriptExtension = ".sh"
-        $ExeExtension = ""
-        $Platform = "Linux"
+        $scriptExtension = ".sh"
+        $exeExtension = ""
+        $platform = "Linux"
     }
 
     if ($IsMacOS)
     {
-        $ScriptExtension = ".sh"
-        $ExeExtension = ""
-        $Platform = "Mac"
+        $scriptExtension = ".sh"
+        $exeExtension = ""
+        $platform = "Mac"
     }
 
-    $BatchFilesDir = Join-Path $EngineDir "Build" "BatchFiles"
-    $BinariesDir = Join-Path $EngineDir "Binaries" $Platform
+    $batchFilesDir = Join-Path $EngineDir "Build" "BatchFiles"
+    $binariesDir = Join-Path $EngineDir "Binaries" $platform
 
-    $EditorExePrefix = "UnrealEditor"
+    $editorExePrefix = "UnrealEditor"
 
     if ($BuildConfig -ne "Development")
     {
-        $EditorExePrefix = "UnrealEditor-$Platform-$BuildConfig"
+        $editorExePrefix = "UnrealEditor-$platform-$BuildConfig"
     }
 
     $Binaries = [PSCustomObject]@{
-        Editor = Join-Path $BinariesDir "$EditorExePrefix$ExeExtension"
-        EditorCmd = Join-Path $BinariesDir "$EditorExePrefix-Cmd$ExeExtension"
+        Editor = Join-Path $binariesDir "$editorExePrefix$exeExtension"
+        EditorCmd = Join-Path $binariesDir "$editorExePrefix-Cmd$exeExtension"
     }
 
     $Directories = [PSCustomObject]@{
-        BatchFiles = $BatchFilesDir  # Engine/Build/BatchFiles
-        Binaries = $BinariesDir  # Engine/Binaries/<Platform>
+        BatchFiles = $batchFilesDir  # Engine/Build/BatchFiles
+        Binaries = $binariesDir  # Engine/Binaries/<Platform>
         Engine = $EngineDir  # Engine
     }
 
     $Extensions = [PSCustomObject]@{
-        script = $ScriptExtension
-        exe = $ExeExtension
+        Script = $scriptExtension
+        Exe = $exeExtension
     }
 
-    $Result = [PSCustomObject]@{
+    $result = [PSCustomObject]@{
         Binaries = $Binaries
         Dirs = $Directories
         Extensions = $Extensions
-        Platform = $Platform
-        UAT = Join-Path $BatchFilesDir "RunUAT$ScriptExtension"
-        UBT = Join-Path $BatchFilesDir "RunUBT$ScriptExtension"
+        Platform = $platform
+        UAT = Join-Path $batchFilesDir "RunUAT$scriptExtension"
+        UBT = Join-Path $batchFilesDir "RunUBT$scriptExtension"
     }
 
-    return $Result
+    return $result
 }
 
 function UE_GetEngineByAssociation
@@ -74,7 +82,7 @@ function UE_GetEngineByAssociation
         [string]$EngineAssociation
     )
 
-    $Result = [PSCustomObject]@{
+    $result = [PSCustomObject]@{
         Name = $EngineAssociation
         Root = $null
     }
@@ -92,23 +100,172 @@ function UE_GetEngineByAssociation
 
         # Compute the path to the .uproject's ../ dir, in which the Engine dir is expected to reside
         # $UProjectFile                                                # /path/to/Project/Project.uproject
-        $UProjectDir = Split-Path -Path $UProjectFile -Parent          # /path/to/Project
-        $EngineRootDir = Split-Path -Path $UProjectDir -Parent         # /path/to
+        $uProjectDir = Split-Path -Path $UProjectFile -Parent          # /path/to/Project
+        $engineRootDir = Split-Path -Path $uProjectDir -Parent         # /path/to
 
-        $Result.Root = $EngineRootDir
-        return $Result
+        $result.Root = $engineRootDir
+        return $result
     }
 
     # When $EngineAssociation is NOT empty, it means this is registered to a custom engine
     # or an Epic Games Launcher engine.
-    #
-    # TODO try to get info on the Engine named $EngineAssociation
-    # It could be like "5.3" or "5.4" (likely an official Launcher-installed Engine)
-    #          or like "CustomEngineName" (in Windows Registry or who knows in Linux/Mac)
-    #
-    # For now this just isn't implemented.
 
-    throw "Not implemented: Cannot locate Engines for UProjects living outside a Custom Engine root"
+    $result =& UE_SelectCustomEngine -Name $EngineAssociation
+    if ($result)
+    {
+        return $result
+    }
+
+    Write-Error "No custom engine found matching EngineAssociation `"$EngineAssociation`""
+    throw "Not implemented: Obtain default Launcher-installed engine location in UE_GetEngineByAssociation"
 }
 
-Export-ModuleMember -Function UE_GetEngineConfig, UE_GetEngineByAssociation
+function UE_ListCustomEngines_Mac
+{
+    $result = [System.Collections.ArrayList]@()
+
+    $installationPairs =& INI_ReadSection -Filename $MacInstallIni -Section "Installations"
+
+    if ($installationPairs -and $installationPairs.Count -gt 0)
+    {
+        for ($i = 0; $i -lt $installationPairs.Count; $i++)
+        {
+            $iniPair = $installationPairs[$i]
+            $result += [PSCustomObject]@{
+                Name = $iniPair.Name
+                Root = $iniPair.Value
+            }
+        }
+    }
+
+    return $result
+}
+
+function UE_ListCustomEngines_Windows
+{
+    $registryBuilds = Get-Item -Path "Registry::$WindowsBuildsRegistryKey" 2> $null
+    $result = [System.Collections.ArrayList]@()
+
+    if (!$registryBuilds)
+    {
+        Write-Warning "Build Registry Not Found: $WindowsBuildsRegistryKey"
+        return $result
+    }
+
+    # Must iterate to Length; registry key does not have a Count
+    for ($i = 0; $i -lt $registryBuilds.Length; $i++)
+    {
+        $propertyList = $registryBuilds[$i].Property
+
+        # propertyList is an actual array, it has a Count
+        if ($propertyList -and $propertyList.Count -gt 0)
+        {
+            for ($p = 0; $p -lt $propertyList.Count; $p++)
+            {
+                $buildName = $propertyList[$p]
+                if ($buildName)
+                {
+                    # Get the ItemPropertyValue for this $buildName
+                    $value = Get-ItemPropertyValue -Path "Registry::$WindowsBuildsRegistryKey" -Name $buildName
+
+                    # Append the build to the $result array
+                    $result += [PSCustomObject]@{
+                        Name = $buildName
+                        Root = $value
+                    }
+                }
+            }
+        }
+    }
+
+    return $result
+}
+
+function UE_ListCustomEngines
+{
+    if ($IsLinux)
+    {
+        throw "Not implemented: UE_ListCustomEngines on Linux"
+    }
+
+    if ($IsMacOS)
+    {
+        return & UE_ListCustomEngines_Mac
+    }
+
+    return & UE_ListCustomEngines_Windows
+}
+
+function UE_RenameCustomEngine
+{
+    param(
+        [string]$OldName,
+        [string]$NewName
+    )
+
+    if (!$OldName)
+    {
+        throw "OldName parameter is required for UE_RenameCustomEngine"
+    }
+
+    if (!$NewName)
+    {
+        throw "NewName parameter is required for UE_RenameCustomEngine"
+    }
+
+    if ($IsLinux)
+    {
+        throw "Not implemented: UE_RenameCustomEngine on Linux"
+    }
+
+    if ($IsMacOS)
+    {
+        # Read the current INI to get the current [Installations] Name=Value pairs
+        $installationPairs =& INI_ReadSection -Filename $MacInstallIni -Section "Installations"
+
+        if ($installationPairs)
+        {
+            # Iterate each of the existing custom engine installation pairs
+            for ($i = 0; $i -lt $installationPairs.Count; $i++)
+            {
+                # If the existing name of the custom engine matches $OldName
+                if ($installationPairs[$i].Name -eq $OldName)
+                {
+                    # Then we want to rename it to $NewName
+                    $installationPairs[$i].Name = $NewName
+                }
+            }
+
+            # Rewrite the INI with the new [Installations] Name=Value pairs
+            $success =& INI_WriteSection -Filename $MacInstallIni -Section "Installations" -Pairs $installationPairs
+        }
+    }
+
+    if ($IsWindows)
+    {
+        Rename-ItemProperty -Path "Registry::$WindowsBuildsRegistryKey" -Name $OldName -NewName $NewName
+    }
+
+    return & UE_SelectCustomEngine -Name $NewName
+}
+
+function UE_SelectCustomEngine
+{
+    param(
+        [string]$Name
+    )
+
+    $customEngines =& UE_ListCustomEngines
+
+    foreach ($engine in $customEngines)
+    {
+        if ($engine.Name -eq $Name)
+        {
+            return $engine
+        }
+    }
+
+    return $null
+}
+
+Export-ModuleMember -Function UE_GetEngineConfig, UE_GetEngineByAssociation, UE_ListCustomEngines, UE_RenameCustomEngine, UE_SelectCustomEngine
