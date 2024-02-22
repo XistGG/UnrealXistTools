@@ -27,7 +27,6 @@ if (!$UProjectFile -or !$UProjectFile.Exists)
     throw "Path is not a UProject: $Path"
 }
 
-
 # Parse the $UProjectFile JSON
 
 $UProject = Get-Content -Raw $UProjectFile.FullName | ConvertFrom-Json
@@ -36,5 +35,10 @@ if (!$UProject)
 {
     throw "Invalid .uproject data: $UProjectFile"
 }
+
+# Add an internal "_UProjectFile" property containing the absolute path to this .uproject
+# This begins with an underscore in case you decide to serialize this object later, you
+# should discard any/all property names beginning with an underscore.
+$UProject | Add-Member -MemberType NoteProperty -Name "_UProjectFile" -Value $UProjectFile.FullName
 
 return $UProject
