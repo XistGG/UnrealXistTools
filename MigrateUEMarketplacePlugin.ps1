@@ -34,6 +34,9 @@ param(
 # Make sure the powershell version is good, or throw an exception
 & $PSScriptRoot/PSVersionCheck.ps1
 
+# Import the UE helper module
+Import-Module -Name $PSScriptRoot/Modules/UE.psm1
+
 ################################################################################
 ##  Validate Input
 ################################################################################
@@ -76,7 +79,8 @@ else
 $FromEngineDir = Join-Path $FromItem.FullName "Engine"
 $ToEngineDir = Join-Path $ToItem.FullName "Engine"
 
-$ToUAT = Join-Path $ToEngineDir "Build" "BatchFiles" "RunUAT.bat"
+$ToEngineConfig =& UE_GetEngineConfig -EngineDir $ToEngineDir  # from Modules/UE.psm1
+$ToUAT = $ToEngineConfig.UAT  # path to "RunUAT.bat" on Windows; "RunUAT.sh" on Linux+Mac
 
 $FromPluginDir = Join-Path $FromEngineDir "Plugins" "Marketplace" $Plugin
 $ToPluginDir = Join-Path $ToEngineDir "Plugins" $ToPluginSubdir $Plugin
