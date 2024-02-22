@@ -29,7 +29,7 @@ param(
 & $PSScriptRoot/PSVersionCheck.ps1
 
 # Import the UE helper module
-Import-Module -Name $PSScriptRoot/Modules/UE.psm1 -Force -Verbose
+Import-Module -Name $PSScriptRoot/Modules/UE.psm1
 
 $BuildsRegistryKey = "HKEY_CURRENT_USER\Software\Epic Games\Unreal Engine\Builds"
 
@@ -59,10 +59,6 @@ function Usage
 & $ScriptName Name
 
     Return the Named engine, returns null if no such Name.
-
-& $ScriptName Name -Start
-
-    Start the Named engine in Editor mode.
 
 & $ScriptName Name -NewName MyEngine
 
@@ -140,13 +136,19 @@ if (!$Name)
 
     if (!$UProject)
     {
-        Write-Error "No -Name provided and no UProject can be deduced"
-        & Usage
-    }
+        Write-Error "No -Name provided and no UProject found in the current directory `"$(Get-Location)`""
+        throw "Invalid Usage. See -Help for more info."
+   }
 
-    $Name = $UProject.EngineAssociation
+    $Name = $UProject.EngineAssociation  # Might be ""
     Write-Debug "Loading Engine based on UProject `"$($UProject._UProjectFile)`" EngineAssociation `"$Name`""
     $UEngine =& UE_GetEngineByAssociation -UProjectFile $UProject._UProjectFile -EngineAssociation $UProject.EngineAssociation
+
+    if ($UEngine)
+    {
+        # In case the UProject.EngineAssociation was "", get the real name of the UEngine we loaded
+        $Name = $UEngine.Name
+    }
 }
 else
 {
