@@ -282,30 +282,45 @@ including `AutoSizeComments`, `BlueprintAssist` and `VisualStudioTools`.
 
 [view source: UEngine.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/UEngine.ps1)
 
-Compatibility: Windows only
+Compatibility: Mac + Windows
 
 - By default selects the engine used by the current or named project
 - `-List` lists all available custom engines
 - `-Name` selects from available custom engines
 - `-NewName` renames an engine to your choice of names
 - `-UProject` selects the engine associated with the given .uproject
-- `-Start` starts the engine editor (Win64 only)
 - `-Debug` enables more detailed debug information
 
 See `-Help` for more Usage info.
 
 ### Usage Examples
 
-Display a list of all custom engines on this system with debug info:
+Display a list of all custom engines on this system:
 ```powershell
-UEngine.ps1 -List -Debug
+UEngine.ps1 -List
 ```
 
-Rename the `OldRandomGUIDName` custom engine as `MyEngine`
+Rename the `{1234-5678-Random-GUID-Name}` custom engine as `MyEngine`:
 ```powershell
-UEngine.ps1 "OldRandomGUIDName" -NewName MyEngine
+UEngine.ps1 "{1234-5678-Random-GUID-Name}" -NewName MyEngine
 ```
 
+Rename the `SomeCustom` custom engine as `OtherCustom` with `-Debug` info:
+```powershell
+UEngine.ps1 SomeCustom -NewName OtherCustom -Debug
+```
+
+Get info about the engine associated with `My.uproject`:
+```powershell
+UEngine.ps1 -UProject path/to/My.uproject
+```
+
+Get info about the engine associated with the `.uproject` in the current directory
+with `-Debug` info
+*(errors out if there is no `.uproject` in the current directory)*:
+```powershell
+UEngine.ps1 -Debug
+```
 
 --------------------------------------------------------------------------------
 
