@@ -49,9 +49,17 @@ function UE_GetEngineConfig
         $editorExePrefix = "UnrealEditor-$platform-$BuildConfig"
     }
 
+    $editorExeName = "$editorExePrefix$exeExtension"
+    $editorCmdExeName = "$editorExePrefix-Cmd$exeExtension"
+
     $Binaries = [PSCustomObject]@{
-        Editor = Join-Path $binariesDir "$editorExePrefix$exeExtension"
-        EditorCmd = Join-Path $binariesDir "$editorExePrefix-Cmd$exeExtension"
+        # Full paths to binaries:
+        Editor = Join-Path $binariesDir $editorExeName
+        EditorCmd = Join-Path $binariesDir $editorCmdExeName
+
+        # Just the BaseName part of the paths to binaries: (Mac requires this)
+        EditorName = $editorExeName
+        EditorCmdName = $editorCmdExeName
     }
 
     $Directories = [PSCustomObject]@{

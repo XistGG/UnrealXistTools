@@ -6,11 +6,10 @@
 [CmdletBinding()]
 param(
     [string]$BuildConfig = "Development",
-    [string]$BuildTarget = "Game",
-    [string]$BuildProject,
+    [string]$BuildProject,  # Inferred by the $UProject by default
     [switch]$Cook,
     [switch]$Help,
-    [string]$Path
+    [string]$UProject
 )
 
 # Make sure the powershell version is good, or throw an exception
@@ -29,14 +28,15 @@ function Usage
 {
     $err = @"
 
-Usage: $ScriptName [-Debug] [-Path Path] [-BuildConfig DebugGame] -Cook
+Usage: $ScriptName [-Debug] [-UProject UProject] [-BuildConfig DebugGame] -Cook
        $ScriptName -Help
 
-    -Cook      Cooks the project
-    [-Debug]   If present, prints additional debugging information.
-    [-Help]    Print this Usage info and exit.
-    [-Path]    (Optional) Path to your ".uproject" file/directory.
-               Will be auto-computed based on your current dir by default.
+    -Cook        Cook the project so you can run it outside the Editor.
+    -Help        Print this Usage info and exit.
+
+    [-Debug]     If present, prints additional debugging information.
+    [-UProject]  (Optional) UProject to your ".uproject" file/directory.
+                 Will be auto-computed based on your current dir by default.
 
 "@
 
@@ -54,15 +54,16 @@ if ($Help)
 ##  Initialization
 ################################################################################
 
-$UProject =& $PSScriptRoot\UProject.ps1 -Path:$Path
+# Convert the -UProject param (if any) to a $UProjectInfo object
+$UProjectInfo =& $PSScriptRoot\UProject.ps1 -Path:$UProject
 
-if (!$UProject)
+if (!$UProjectInfo)
 {
     throw "You must specify a valid UProject file; see -Help for more info"
 }
 
-$UProjectFile = $UProject._UProjectFile
-$EngineAssociation = $UProject.EngineAssociation
+$UProjectFile = $UProjectInfo._UProjectFile
+$EngineAssociation = $UProjectInfo.EngineAssociation
 
 $UProjectFileItem = Get-Item $UProjectFile
 
@@ -74,7 +75,7 @@ if (!$BuildProject -or $BuildProject -eq "")
     Write-Debug "Using default -BuildProject `"$BuildProject`" given no explicit parameter override"
 }
 
-$Engine =& UE_GetEngineByAssociation -UProjectFile $UProjectFile -EngineAssociation $EngineAssociation -Debug:$Debug
+$Engine =& UE_GetEngineByAssociation -UProjectFile $UProjectFile -EngineAssociation $EngineAssociation
 
 if (!$Engine -or !$Engine.Root)
 {
@@ -97,10 +98,10 @@ if ($Cook)
 {
     $args = @(
         "BuildCookRun", "-Cook", "-SkipStage",
-        "-Target=`"$BuildProject`"",
-        "-Platform=`"$($EngineConfig.Platform)`"",
+        "-Target=$BuildProject",  # -Target="Foo" FAILS on Mac (!) must be -Target=Foo
+        "-Platform=$($EngineConfig.Platform)",  # -Platform="Mac" FAILS (!) must be -Platform=Mac
         "-Project=`"$UProjectFile`"",
-        "-UnrealExe=`"$($EngineConfig.Binaries.EditorCmd)`"",
+        "-UnrealExe=$($EngineConfig.Binaries.EditorCmdName)",  # Mac does not allow quotes!
         "-NoP4"
     )
 }
