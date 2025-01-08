@@ -14,11 +14,13 @@
 # Unreal Engines.  The error messages will hopefully help you determine the appropriate
 # values for these on your system.
 #
+# Now that UE Marketplace moved to Fab, the plugin directory names are annoying.
+# To get around this, use the -PluginSourceName parameter.
+#
 # Example usage:
 #
-#   MigrateUEMarketplacePlugin.ps1 -Plugin AutoSizeComments -From "E:/EpicLauncher/UE_5.1" -To "E:/XUE52" -Debug -Force
-#   MigrateUEMarketplacePlugin.ps1 -Plugin BlueprintAssist -From "E:/EpicLauncher/UE_5.1" -To "E:/XUE52" -Debug -Force
-#   MigrateUEMarketplacePlugin.ps1 -Plugin VisualStudioTools -From "E:/EpicLauncher/UE_5.1" -To "E:/XUE52" -Debug -Force
+#   MigrateUEMarketplacePlugin.ps1 -Plugin AutoSizeComments -PluginSourceName AutoSizec06247d73541V16 -From "E:/EpicLauncher/UE_5.5" -To "E:/MyEngine_5.5" -Debug -Force
+#   MigrateUEMarketplacePlugin.ps1 -Plugin BlueprintAssist -PluginSourceName Blueprin5dd30dcb4d35V14 -From "E:/EpicLauncher/UE_5.5" -To "E:/MyEngine_5.5" -Debug -Force
 #
 
 [CmdletBinding()]
@@ -28,6 +30,8 @@ param(
     [Parameter(Mandatory)]$Plugin,
     [Parameter(Mandatory)]$From,
     [Parameter(Mandatory)]$To,
+    [string]$PluginSourceName = "",  # Defaults to same as $Plugin
+    [string]$PluginDestinationName = "",  # Defaults to same as $Plugin
     [switch]$ToThirdParty
 )
 
@@ -72,6 +76,23 @@ else
 }
 
 
+# If $PluginSourceName and/or $PluginDestinationName were not explicitly configured,
+# they default to the same value as $Plugin
+#
+# With the migration of the Marketplace to Fab, the $PluginSourceName is seemingly
+# now a randomish string of letters.
+
+if ($PluginSourceName -eq "")
+{
+    $PluginSourceName = $Plugin
+}
+
+if ($PluginDestinationName -eq "")
+{
+    $PluginDestinationName = $Plugin
+}
+
+
 ################################################################################
 ##  Init Directory Vars
 ################################################################################
@@ -82,8 +103,8 @@ $ToEngineDir = Join-Path $ToItem.FullName "Engine"
 $ToEngineConfig =& UE_GetEngineConfig -EngineDir $ToEngineDir  # from Modules/UE.psm1
 $ToUAT = $ToEngineConfig.UAT  # path to "RunUAT.bat" on Windows; "RunUAT.sh" on Linux+Mac
 
-$FromPluginDir = Join-Path $FromEngineDir "Plugins" "Marketplace" $Plugin
-$ToPluginDir = Join-Path $ToEngineDir "Plugins" $ToPluginSubdir $Plugin
+$FromPluginDir = Join-Path $FromEngineDir "Plugins" "Marketplace" $PluginSourceName
+$ToPluginDir = Join-Path $ToEngineDir "Plugins" $ToPluginSubdir $PluginDestinationName
 
 
 ################################################################################

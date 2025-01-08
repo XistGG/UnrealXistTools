@@ -253,11 +253,15 @@ Compatibility: Mac + Windows
 Required Arguments:
 
 - `-Plugin` Name
+- `-PluginSourceName` Name of this plugin's Fab directory
 - `-From` PathToSourceEngineRoot
 - `-To` PathToDestinationEngineRoot
 
 Optional Arguments:
 
+- `-PluginDestinationName`
+  - By default, the `-Plugin` Name is also used as the `-PluginDestinationName`
+  - You can override this to name the plugin directory something different
 - `-ToThirdParty`
   - If present, causes the plugin to be migrated to your `Plugins/ThirdParty` directory rather
     than to the default `Plugins/Marketplace`
@@ -270,18 +274,35 @@ Optional Arguments:
 ### Usage Examples
 
 ```powershell
-MigrateUEMarketplacePlugin.ps1 -Plugin AutoSizeComments -From "E:/EpicLauncher/UE_5.1" -To "E:/MyEngine_5.2" -Debug -Force
-MigrateUEMarketplacePlugin.ps1 -Plugin BlueprintAssist -From "E:/EpicLauncher/UE_5.1" -To "E:/MyEngine_5.2" -Debug -Force
-MigrateUEMarketplacePlugin.ps1 -Plugin VisualStudioTools -From "E:/EpicLauncher/UE_5.1" -To "E:/MyEngine_5.2" -Debug -Force
+MigrateUEMarketplacePlugin.ps1 -Plugin AutoSizeComments -PluginSourceName AutoSizec06247d73541V16 -From "E:/EpicLauncher/UE_5.5" -To "E:/MyEngine_5.5" -Debug -Force
+MigrateUEMarketplacePlugin.ps1 -Plugin BlueprintAssist -PluginSourceName Blueprin5dd30dcb4d35V14 -From "E:/EpicLauncher/UE_5.5" -To "E:/MyEngine_5.5" -Debug -Force
 ```
 
-In the above example, you would have told the Epic Games Launcher to install UE 5.1 into
-the folder `E:/EpicLauncher/UE_5.1`
-and you would have installed these plugins from the UE Marketplace into the UE 5.1 Engine.
+In the above example, you would have told the Epic Games Launcher to install UE 5.5 into
+the folder `E:/EpicLauncher/UE_5.5`
+and you would have installed these plugins from the UE Marketplace into the UE 5.5 Engine.
 
 These commands would then copy 3 plugins from the UE Marketplace into your custom engine
-at `E:/MyEngine_5.2`
-including `AutoSizeComments`, `BlueprintAssist` and `VisualStudioTools`.
+at `E:/MyEngine_5.5`
+including `AutoSizeComments` and `BlueprintAssist`.
+
+**NOTICE:** Since UE Marketplace migrated to Fab, Marketplace plugins are now being installed
+into random-looking (probably Fab ID-based) directory names.
+
+In my case it installed them into these weird directories:
+
+| Plugin             | Marketplace Directory                                |
+|--------------------|------------------------------------------------------|
+| `AutoSizeComments` | Engine/Plugins/Marketplace/`AutoSizec06247d73541V16` |
+| `BlueprintAssist`  | Engine/Plugins/Marketplace/`Blueprin5dd30dcb4d35V14` |
+
+Whereas the directory name used to match the plugin name, it no longer does.
+
+Thus, you have to use the `-PluginSourceName` parameter and set it to the name of the Marketplace directory.
+
+Because this is now required, there is also a new optional `-PluginDestinationName` parameter,
+which defaults to the same as the Plugin name, but you can set it to this random looking ID
+if you want it to be named exactly the same, or choose some other name, etc.  It's up to you.
 
 
 # UEngine.ps1
