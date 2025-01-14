@@ -41,6 +41,8 @@ I encourage you to research it further on your own.
 
 # Build Tools
 
+- [UAT.ps1](#uatps1)
+  - Easy interface to `RunUAT.*` tools
 - [UProjectClean.ps1](#uprojectcleanps1)
   - Completely Clean/Reset Repo/Depot
   - Removes all generated C++ Build files
@@ -111,6 +113,23 @@ I encourage you to research it further on your own.
   - Useful when coding on 1 workstation and testing on multiple other workstations
 
 --------------------------------------------------------------------------------
+
+# UAT.ps1
+
+[view source: UAT.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/UAT.ps1)
+
+Compatibility: Windows + Mac
+
+This is an easy interface to `RunUAT.bat` and/or `RunUAT.sh` which auto-computes
+a lot of otherwise required command-line arguments to those tools.
+
+### Usage Examples
+
+Build, cook, stage and run the `LyraGameEOS` target from `Lyra.uproject` in the `Development` configuration:
+
+```powershell
+UAT.ps1 Lyra.uproject -Config Development -Target LyraGameEOS -Build -Cook -Stage -Run
+```
 
 
 # UProjectClean.ps1
