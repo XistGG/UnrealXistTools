@@ -66,10 +66,13 @@ function HandlePendingIgnoredFiles
         {
             if ($y)
             {
+                # The "-y" switch was passed, so actually do obliterate these files
                 p4 obliterate -y @obliterates
             }
             else
             {
+                # No "-y" switch on the command line, so DO NOT actually obliterate the files,
+                # instead just show which files WOULD BE obliterated with the "-y" switch.
                 p4 obliterate @obliterates
             }
         }

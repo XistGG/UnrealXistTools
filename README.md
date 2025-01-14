@@ -79,16 +79,33 @@ I encourage you to research it further on your own.
 
 # P4 Tools
 
+- [P4AutoResolveToDefaultCL.ps1](#p4autoresolvetodefaultclps1)
+  - Given a CL with a massive number of files to be resolved, auto-resolve (no merging)
+    everything we can into the default CL, leaving only those files requiring manual
+    merging in the original CL.
+  - Very helpful for Engine upgrades (5.4 -> 5.5 was 150k+ files to resolve!)
 - [P4Config.ps1](#p4configps1)
   - Locate and import `.p4config` in the given Path or one of its parents
   - `-Export` the config to the system environment *(optional)*
+  - Used by
+    [`Rider.ps1`](#riderps1)
+    and [`VS.ps1`](#vsps1)
+    to set the P4 environment specific to the given project being opened
+    so you don't have to store duplicate P4 settings in IDE configs.
 - [P4EncodePath.ps1](#p4encodepathps1)
   - Encode (or `-Decode`) paths for P4
+- [P4FStat.ps1](#p4fstatps1)
+  - Provides easy access to `p4 fstat file` output
+  - `$(P4FStat.ps1 myfile).headType` (== `text+w` for example)
 - [P4ImportBulk.ps1](#p4importbulkps1)
   - Import a massive number of files into a new depot without breaking P4
     (tested by importing 800k+ files from UDN P4 `//UE5/Release-5.2`)
 - [P4Info.ps1](#p4infops1)
   - Makes it real easy to extract `p4 info` values
+- [P4ObliterateIgnoredFiles.ps1](#p4obliterateignoredfilesps1)
+  - Recursively scan the given path, searching for files that were added to p4
+    but are supposed to be ignored, and obliterate any such files from the p4 server.
+    - Note: obliterate requires admin access to the p4 server.
 - [P4Reunshelve.ps1](#p4reunshelveps1)
   - Easy repetitive "revert changes and re-unshelve"
   - Useful when coding on 1 workstation and testing on multiple other workstations
@@ -138,7 +155,7 @@ Compatibility: Windows only
 
 Start Unreal Editor: Open the `.uproject` associated with the current directory.
 
-Alias for `UnrealVersionSelector.ps1 -Editor $(&UProjectFile.ps1 -Path:$Path).FullName`
+Alias for `UnrealVersionSelector.ps1 -Editor $(UProjectFile.ps1 -Path:$Path).FullName`
 
 Note that as this uses `UnrealVersionSelector` under the hood, you must have compiled your
 editor and project in `Development Editor` mode.  When opening a project in editor, the
@@ -203,6 +220,9 @@ Compatibility: Mac + Windows
 
 Start Rider: Open the `.uproject` associated with the current directory.
 
+Uses [`P4Config.ps1`](#p4configps1) to search for any relevant `.p4config`
+and if one is found, adds the P4 config to the environment for Rider.
+
 Supports the `-Debug` flag, add it to any command to gain more insight.
 
 ### Usage Examples
@@ -225,6 +245,9 @@ Rider.ps1 -sln
 Compatibility: Windows only
 
 Start Visual Studio: Open the `.sln` associated with the current directory.
+
+Uses [`P4Config.ps1`](#p4configps1) to search for any relevant `.p4config`
+and if one is found, adds the P4 config to the environment for Rider.
 
 Supports the `-Debug` flag, add it to any command to gain more insight.
 
@@ -420,6 +443,47 @@ UProjectSln.ps1 project.sln
 
 --------------------------------------------------------------------------------
 
+# P4AutoResolveToDefaultCL.ps1 
+
+[view source: P4AutoResolveToDefaultCL.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/P4AutoResolveToDefaultCL.ps1)
+
+Compatibility: Mac + Windows
+
+Given a CL that contains for example an integrate result, where a lot of files
+need to be resolved, auto-resolve (no merging) every file that can be auto resolved,
+and move it to the default CL.
+
+After running this, the original $CL will contain ONLY files that could not be
+auto-resolved, and you'll need to resolve those manually.
+
+This was very useful in upgrading UE 5.4 to UE 5.5, where there were more than 150k
+files needing to be resolved, but only a small number actually required manual work.
+After running this, the $CL with the difficult-to-resolve files was small enough to
+be worked on by humans.
+
+Procedure:
+1. Integrate another stream (or do anything requiring tons of resolves).
+2. Move all pending file changes to a non-default changelist (e.g. CL#123).
+3. MAKE SURE the default changelist is EMPTY, we will be moving things there.
+   - If you have pending changes you want to save in the default CL, move them
+     to a new CL now.
+4. Run P4AutoResolveToDefaultCL.ps1 (this script).
+   - All the "easy" stuff that is auto-resolved will be moved to the default CL.
+   - All the "hard" stuff that requires manual inspection will remain in CL#123.
+5. Manually resolve all the files still in CL#123.
+6. Combine CL#123 and the default CL into a single integration CL and submit it.
+
+## Usage
+
+In the example above, we used CL#123, which is done with the following command:
+
+```powershell
+P4AutoResolveToDefaultCL.ps1 -CL 123 -Debug
+```
+
+As usual, the `-Debug` flag is optional and provides more insight into what the
+command is doing when it runs.
+
 # P4Config.ps1
 
 [view source: P4Config.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/P4Config.ps1)
@@ -466,6 +530,80 @@ for more info regarding P4 path encoding requirements.
 See `-Help` for Usage.
 
 
+# P4FStat.ps1
+
+[view source: P4FStat.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/P4FStat.ps1)
+
+Compatibility: Mac + Windows
+
+Provides cross-platform object-based access to `p4 fstat filepath` results.
+
+For example if you just run `p4 fstat` manually, you get a text dump that you would then
+have to parse, which would work differently depending on what platform you're on.
+
+```text
+PS /Users/xist/dev/Xim> p4 fstat RunUAT.sh
+... depotFile //Xim/Dev/RunUAT.sh
+... clientFile /Users/xist/dev/Xim/RunUAT.sh
+... isMapped
+... headAction integrate
+... headType text+x
+... headTime 1734281444
+... headRev 3
+... headChange 145
+... headModTime 1734281422
+... pathSource //Xim/Dev
+... pathType share
+... pathPermissions writable
+... effectiveComponentType none
+... haveRev 3
+```
+
+Conversely, you can use `P4FStat.ps1` which gives you an object result, which works
+identically regardless of your current platform:
+
+```text
+PS /Users/xist/dev/Xim> P4FStat.ps1 ./RunUAT.sh       
+
+depotFile              : //Xim/Dev/RunUAT.sh
+clientFile             : /Users/xist/dev/Xim/RunUAT.sh
+isMapped               : True
+headAction             : integrate
+headType               : text+x
+headTime               : 1734281444
+headRev                : 3
+headChange             : 145
+headModTime            : 1734281422
+pathSource             : //Xim/Dev
+pathType               : share
+pathPermissions        : writable
+effectiveComponentType : none
+haveRev                : 3
+
+PS /Users/xist/dev/Xim> $result = P4FStat.ps1 ./RunUAT.sh
+PS /Users/xist/dev/Xim> $result.depotFile                
+//Xim/Dev/RunUAT.sh
+PS /Users/xist/dev/Xim> $result.headRev  
+3
+PS /Users/xist/dev/Xim> $result.headType
+text+x
+```
+
+You can run it on multiple files at a time by passing a array, in which case
+the result value is an array of objects:
+
+```text
+PS /Users/xist/dev/Xim> $files = Get-ChildItem -Path "RunUAT.*"                                         PS /Users/xist/dev/Xim> $result = P4FStat.ps1 $files           
+PS /Users/xist/dev/Xim> $result = P4FStat.ps1 $files
+PS /Users/xist/dev/Xim> $result.Count               
+2
+PS /Users/xist/dev/Xim> $result[0].depotFile
+//Xim/Dev/RunUAT.bat
+PS /Users/xist/dev/Xim> $result[1].depotFile
+//Xim/Dev/RunUAT.sh
+```
+
+
 # P4ImportBulk.ps1
 
 [view source: P4ImportBulk.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/P4ImportBulk.ps1)
@@ -506,6 +644,38 @@ P4Info.ps1 -Config > .p4config
 ```
 
 Try the `-Debug` switch to see the parse info.
+
+
+# P4ObliterateIgnoredFiles.ps1
+
+[view source: P4ObliterateIgnoredFiles.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/P4ObliterateIgnoredFiles.ps1)
+
+Compatibility: Mac + Windows
+
+Iterate through the local files, and for every file that SHOULD be ignored,
+yet exists in the P4 depot anyway, obliterate it from P4.
+
+Pass the `-y` flag to actually obliterate, otherwise it will just tell you what
+it would have done if you had passed the `-y` flag.
+
+Note that you need to have permission to obliterate on the P4 server for this
+to work.  (`$env:P4USER = "admin"` will do the trick, if you have the password).
+
+## Usage
+
+This just tells you which files it would obliterate from the current directory
+(`-Path .`), and does not actually obliterate:
+
+```powershell
+P4ObliterateIgnoredFiles.ps1 -Path .
+```
+
+This actually does obliterate any/all files that should be ignored by p4
+under the current directory (`-Path .`):
+
+```powershell
+P4ObliterateIgnoredFiles.ps1 -Path . -y
+```
 
 
 # P4Reunshelve.ps1

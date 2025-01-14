@@ -6,13 +6,25 @@
 #   need to be resolved, auto-resolve (no merging) every file that can be auto resolved,
 #   and move it to the default CL.
 #
-#   After running this, the original $CL will contain ONLY files that could not be auto-
-#   resolved, and you'll need to resolve those manually.
+#   After running this, the original $CL will contain ONLY files that could not be
+#   auto-resolved, and you'll need to resolve those manually.
 #
 #   This was very useful in upgrading UE 5.4 to UE 5.5, where there were more than 150k
 #   files needing to be resolved, but only a small number actually required manual work.
 #   After running this, the $CL with the difficult-to-resolve files was small enough to
 #   be worked on by humans.
+#
+#   Procedure:
+#   1. Integrate another stream (or do anything requiring tons of resolves).
+#   2. Move all pending file changes to a non-default changelist (e.g. CL#123).
+#   3. MAKE SURE the default changelist is EMPTY, we will be moving things there.
+#      - If you have pending changes you want to save in the default CL, move them
+#        to a new CL now.
+#   4. Run P4AutoResolveToDefaultCL.ps1 (this script).
+#      - All the "easy" stuff that is auto-resolved will be moved to the default CL.
+#      - All the "hard" stuff that requires manual inspection will remain in CL#123.
+#   5. Manually resolve all the files still in CL#123.
+#   6. Combine CL#123 and the default CL into a single integration CL and submit it.
 #
 
 [CmdletBinding()]
