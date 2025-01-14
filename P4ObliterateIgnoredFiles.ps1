@@ -36,7 +36,7 @@ function HandlePendingIgnoredFiles
 
     if ($script:IgnoredFiles.Count -gt 0)
     {
-        $result =& P4_FStat -Paths $script:IgnoredFiles -Debug:$Debug 2> $null
+        $result =& P4_FStat -Paths $script:IgnoredFiles 2> $null
 
         $obliterates = New-Object System.Collections.ArrayList
 
@@ -107,7 +107,7 @@ function ObliterateIgnoredFiles
 
     #Write-Debug "ObliterateIgnoredFiles $($Files.Count)"
 
-    $result =& P4_FilterIgnoredPaths -Paths $Files -Debug:$Debug
+    $result =& P4_FilterIgnoredPaths -Paths $Files
 
     # If there are any files that should be ignored in this batch,
     # determine if they need to be obliterated

@@ -19,11 +19,13 @@
 
 [CmdletBinding()]
 param(
-    [Parameter()]$Path
+    [Parameter(Position = 0)] $Path
 )
 
 # Make sure the powershell version is good, or throw an exception
 & $PSScriptRoot/PSVersionCheck.ps1
+
+$ScriptName = $MyInvocation.MyCommand.Name
 
 function FindUProjectInDirectory()
 {
@@ -41,7 +43,7 @@ function FindUProjectInDirectory()
         # Found exactly 1 .uproject file, use it
         $Result = $TempProjects[0]
 
-        Write-Debug "Found 1 .uproject in $Directory, using it: $Result"
+        Write-Debug "${ScriptName}: Found 1 .uproject in $Directory, using it: $Result"
     }
     elseif ($TempProjects.count -gt 1)
     {
@@ -54,11 +56,11 @@ function FindUProjectInDirectory()
             {
                 # Found it (example "Foo/Foo.uproject")
                 $Result = $ProjectFile
-                Write-Debug "Compare '$ProjectName' -ieq '$($ProjectFile.BaseName)' == TRUE"
+                Write-Debug "${ScriptName}: Compare '$ProjectName' -ieq '$($ProjectFile.BaseName)' == TRUE"
             }
             else
             {
-                Write-Debug "Compare '$ProjectName' -ieq '$($ProjectFile.BaseName)' == false"
+                Write-Debug "${ScriptName}: Compare '$ProjectName' -ieq '$($ProjectFile.BaseName)' == false"
             }
         }
 
@@ -76,7 +78,7 @@ function FindUProjectInDirectory()
             throw "Explicit uproject required for directory: $Directory"
         }
 
-        Write-Debug "Found 2+ .uproject in $Directory, using: $Result"
+        Write-Debug "${ScriptName}: Found 2+ .uproject in $Directory, using: $Result"
     }
     else # $TempProjects.count -lte 0
     {
@@ -98,7 +100,7 @@ if (!$Path)  # if $null, '' or any other empty value
     # Default implicit $Path is current directory
     $Path = Get-Location
 
-    Write-Debug "Auto-selecting current directory Path: $Path"
+    Write-Debug "${ScriptName}: Auto-selecting current directory Path: $Path"
 }
 
 # Try to get information about the UProject (file or directory)
@@ -118,7 +120,7 @@ if (!$UProjectFileItem.PSIsContainer)
         throw "File is not a .uproject: $Path"
     }
 
-    Write-Debug "UProjectFile is a .uproject file; using it: $($UProjectFileItem.FullName)"
+    Write-Debug "${ScriptName}: UProjectFile is a .uproject file; using it: $($UProjectFileItem.FullName)"
 }
 else
 {
@@ -133,6 +135,6 @@ else
 
 $UProjectFile = $UProjectFileItem
 
-Write-Debug "UProjectFile=$UProjectFile"
+Write-Debug "${ScriptName}: UProjectFile=$UProjectFile"
 
 return $UProjectFile

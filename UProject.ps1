@@ -7,17 +7,20 @@
 
 [CmdletBinding()]
 param(
-    [Parameter()]$Path
+    [Parameter(Position = 0)] $Path
 )
 
 # Make sure the powershell version is good, or throw an exception
 & $PSScriptRoot/PSVersionCheck.ps1
 
+$ScriptName = $MyInvocation.MyCommand.Name
+
 ################################################################################
 ##  Main
 ################################################################################
 
-Write-Debug "Compute UProjectFile Path=[$Path]"
+Write-Debug "${ScriptName}: Compute UProjectFile Path=[$Path]"
+
 $UProjectFile =& $PSScriptRoot/UProjectFile.ps1 -Path:$Path
 
 # Do not continue without a valid $UProjectFile
