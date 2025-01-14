@@ -7,6 +7,7 @@
 param(
     [string]$BuildConfig = "Development",
     [string]$BuildProject,  # Inferred by the $UProject by default
+    [switch]$Build,
     [switch]$Cook,
     [switch]$Help,
     [string]$UProject
@@ -94,16 +95,37 @@ if (!(Test-Path -Path $EngineDir -PathType Container))
 
 $EngineConfig =& UE_GetEngineConfig -BuildConfig:$BuildConfig -EngineDir:$EngineDir
 
-if ($Cook)
+$args = @(
+    "-ScriptsForProject=`"$UProjectFile`"",
+    "-NoCompileUAT"
+    )
+
+if ($Build -or $Cook)
 {
-    $args = @(
-        "BuildCookRun", "-Cook", "-SkipStage",
+    $args += @(
+        "BuildCookRun",
         "-Target=$BuildProject",  # -Target="Foo" FAILS on Mac (!) must be -Target=Foo
         "-Platform=$($EngineConfig.Platform)",  # -Platform="Mac" FAILS (!) must be -Platform=Mac
+        "-ClientConfig=$BuildConfig",
+        "-ServerConfig=$BuildConfig",
         "-Project=`"$UProjectFile`"",
         "-UnrealExe=$($EngineConfig.Binaries.EditorCmdName)",  # Mac does not allow quotes!
         "-NoP4"
-    )
+        )
+
+    if ($Build)
+    {
+        $args += @(
+            "-Build"
+            )
+    }
+
+    if ($Cook)
+    {
+        $args += @(
+            "-Cook"
+            )
+    }
 }
 else
 {
