@@ -5,12 +5,15 @@
 
 [CmdletBinding()]
 param(
-    [string]$BuildConfig = "Development",
-    [string]$BuildProject,  # Inferred by the $UProject by default
-    [switch]$Build,
+    [string]$Config = "Development",
+    [string]$Target = "LyraGameEOS",
     [switch]$Cook,
+    [switch]$Build,
+    [switch]$Run,
+    [switch]$Server,
+    [switch]$Stage,
     [switch]$Help,
-    [string]$UProject
+    [Parameter(Position = 0)]$Path
 )
 
 # Make sure the powershell version is good, or throw an exception
@@ -29,11 +32,12 @@ function Usage
 {
     $err = @"
 
-Usage: $ScriptName [-Debug] [-UProject UProject] [-BuildConfig DebugGame] -Cook
+Usage: $ScriptName [-Path UProject] [-BuildConfig DebugGame] [-Target LyraGameSteam] -Cook
        $ScriptName -Help
 
     -Cook        Cook the project so you can run it outside the Editor.
     -Help        Print this Usage info and exit.
+    -Target      The build target (prefix of your "*.Target.cs" file)
 
     [-Debug]     If present, prints additional debugging information.
     [-UProject]  (Optional) UProject to your ".uproject" file/directory.
@@ -55,28 +59,27 @@ if ($Help)
 ##  Initialization
 ################################################################################
 
-# Convert the -UProject param (if any) to a $UProjectInfo object
-$UProjectInfo =& $PSScriptRoot\UProject.ps1 -Path:$UProject
-
-if (!$UProjectInfo)
+try
 {
-    throw "You must specify a valid UProject file; see -Help for more info"
+    # Convert the -Path param (if any) to a $UProjectInfo object
+    $UProjectInfo =& $PSScriptRoot\UProject.ps1 -Path:$Path
+}
+catch
+{
+    Write-Error "Unable to read the UProject file at -Path `"$Path`", check your -Path argument and try again."
+    throw $_
 }
 
-$UProjectFile = $UProjectInfo._UProjectFile
+$UProjectFileItem = Get-Item $UProjectInfo._UProjectFile
+$UProjectFile = $UProjectFileItem.FullName
+
+Write-Debug "${ScriptName}: Using UProject = $UProjectFile"
+
 $EngineAssociation = $UProjectInfo.EngineAssociation
 
-$UProjectFileItem = Get-Item $UProjectFile
+Write-Debug "${ScriptName}: Searching for UEngine: UProject.EngineAssociation = `"$EngineAssociation`""
 
-# If the user didn't specify an explicit $BuildProject, then use the BaseName
-# of the .uproject file as the default value.
-if (!$BuildProject -or $BuildProject -eq "")
-{
-    $BuildProject = $UProjectFileItem.BaseName
-    Write-Debug "Using default -BuildProject `"$BuildProject`" given no explicit parameter override"
-}
-
-$Engine =& UE_GetEngineByAssociation -UProjectFile $UProjectFile -EngineAssociation $EngineAssociation
+$Engine =& UE_GetEngineByAssociation -UProjectFile:$UProjectFile -EngineAssociation:$EngineAssociation
 
 if (!$Engine -or !$Engine.Root)
 {
@@ -86,50 +89,62 @@ if (!$Engine -or !$Engine.Root)
 
 $EngineDir = Join-Path $Engine.Root "Engine"
 
-Write-Debug "Using Engine `"$EngineDir`" for UProject `"$UProjectFile`" EngineAssociation `"$EngineAssociation`""
+Write-Debug "${ScriptName}: Using Engine `"$EngineDir`" for UProject `"$UProjectFile`" EngineAssociation `"$EngineAssociation`""
 
 if (!(Test-Path -Path $EngineDir -PathType Container))
 {
     throw "Invalid Engine Directory `"$EngineDir`""
 }
 
-$EngineConfig =& UE_GetEngineConfig -BuildConfig:$BuildConfig -EngineDir:$EngineDir
+$EngineConfig =& UE_GetEngineConfig -BuildConfig:$Config -EngineDir:$EngineDir
 
 $args = @(
-    "-ScriptsForProject=`"$UProjectFile`"",
+    "-ScriptsForProject=$UProjectFile",
     "-NoCompileUAT"
     )
 
-if ($Build -or $Cook)
+$UAT = $EngineConfig.UAT
+
+if ($Cook -or $Run -or $Stage)
 {
-    $args += @(
+    $args = @(
         "BuildCookRun",
-        "-Target=$BuildProject",  # -Target="Foo" FAILS on Mac (!) must be -Target=Foo
-        "-Platform=$($EngineConfig.Platform)",  # -Platform="Mac" FAILS (!) must be -Platform=Mac
-        "-ClientConfig=$BuildConfig",
-        "-ServerConfig=$BuildConfig",
-        "-Project=`"$UProjectFile`"",
-        "-UnrealExe=$($EngineConfig.Binaries.EditorCmdName)",  # Mac does not allow quotes!
+        "-Target=$Target",
+        "-Platform=$($EngineConfig.Platform)",
+        "-Config=$Config",
+        "-Project=$UProjectFile",
+        "-UnrealExe=$($EngineConfig.Binaries.EditorCmdName)",
         "-NoP4"
         )
 
-    if ($Build)
-    {
-        $args += @(
-            "-Build"
-            )
-    }
+    if ($Build)        { $args += "-Build" }
+    if ($Server)       { $args += "-Server" }
 
-    if ($Cook)
-    {
-        $args += @(
-            "-Cook"
-            )
-    }
+    if ($Cook)         { $args += "-Cook" }
+    if ($Run)          { $args += "-Run" }
+    if ($Stage)        { $args += "-Stage" }
+}
+elseif ($Build)
+{
+    # If all we want to do is -Build, then run UBT instead of UAT
+    $UAT = $EngineConfig.UBT
+
+    # Override all previously set $args since we're running UBT instead of UAT
+    $args = @(
+        $Target,
+        $EngineConfig.Platform,
+        $Config,
+        "-SkipUBTBuild"
+        )
 }
 else
 {
     & Usage
 }
 
-& $EngineConfig.UAT @args
+Write-Debug "${ScriptName}: EXEC: $UAT $($args -join ' ')"
+
+& $UAT @args
+
+# Explicitly exit with the same exit code as UAT/UBT exited with
+exit $LASTEXITCODE
