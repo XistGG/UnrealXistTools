@@ -5,10 +5,11 @@ Xist's Unreal C++ Build & Dev Tools.  Requires PowerShell 7+.
 
 Main Branch: https://github.com/XistGG/UnrealXistTools/
 
-UnrealXistTools is intended to work on both Windows and Mac.
-Each tool below specifies the exact compatibility (some are Windows only).
+UnrealXistTools works on Windows, Mac and Linux.
 
-It should also mostly work on Linux, though I haven't tested it yet.
+Some tools rely on underlying Epic apps that are Windows-only,
+but the vast majority of this is fully cross-platform.
+Each tool below specifies the exact compatibility.
 
 ## Setup
 
@@ -16,6 +17,8 @@ It should also mostly work on Linux, though I haven't tested it yet.
   - Mac: `brew install --cask powershell`
   - Windows: `winget install Microsoft.PowerShell`
     *(issues? [try this fix](https://github.com/microsoft/winget-cli/issues/3652#issuecomment-1909141458))*
+  - Linux: `sudo snap install powershell --classic`
+    *(or [this procedure](https://learn.microsoft.com/en-us/powershell/scripting/install/install-ubuntu?view=powershell-7.4))*
 - Clone this repository
 - Add this repository clone folder to your `$env:PATH`
 
