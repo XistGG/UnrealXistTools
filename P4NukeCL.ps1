@@ -14,7 +14,7 @@
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory=$true)]
+    [Parameter(Mandatory=$true, Position=0)]
     [object]$CL
 )
 
@@ -29,7 +29,12 @@ function NukeCL
     )
 
     p4 revert -k -c $CL //...
-    p4 change -d $CL
+
+    if ($CL -ne "default")
+    {
+        p4 change -d $CL
+    }
+
     $null
 }
 
