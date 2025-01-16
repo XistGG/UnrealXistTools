@@ -137,11 +137,12 @@ function AddPaths()
     $args = New-Object System.Collections.ArrayList
     $args.Add("add")
     $args.Add("-f")
-    # Add each file path as a quoted argument
+
+    # Add encoded file paths
     foreach ($Path in $Paths)
     {
-        $Escaped = $Path -replace '"','`"'
-        $args.Add("`"$Escaped`"")
+        $encodedPath = P4_EncodePath $Path
+        [void] $args.Add($encodedPath)
     }
 
     if ($DryRun)
@@ -180,8 +181,8 @@ function SubmitPaths()
         [string] $Description
     )
 
-    # Escape quotes in $Description for argument safety
-    $args = @("submit", "-d", "`"Bulk Import $($Description -replace '"','`"')`"")
+    # Escape quotes in $Description (it seems Start-Process just concatenates them?)
+    $args = @("submit", "-d", "`"Bulk Import ${Description}`"")
 
     # If Parallel processing is not explicitly disabled, then enable it,
     # which makes "p4 submit" execute much faster
@@ -328,7 +329,7 @@ function ImportInBatches
             # Each time the buckets add up to a batch, submit to the server
             if ($CurrentBatchSize -ge $BatchSize)
             {
-                $process =& SubmitPaths -Description "${SubmitStartLine}..${LineNum}"
+                $process =& SubmitPaths -Description "$CurrentBatchSize (lines ${SubmitStartLine}..${LineNum})"
 
                 # Reset Batch
                 $SubmitStartLine = $LineNum + 1
@@ -347,7 +348,7 @@ function ImportInBatches
         # Submit any remaining batch contents
         if ($CurrentBatchSize -gt 0)
         {
-            $process =& SubmitPaths -Description "${SubmitStartLine}..${LineNum}"
+            $process =& SubmitPaths -Description "$CurrentBatchSize (lines ${SubmitStartLine}..${LineNum})"
         }
     }
     end
