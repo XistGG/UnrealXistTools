@@ -141,8 +141,7 @@ function AddPaths()
     # Add encoded file paths
     foreach ($Path in $Paths)
     {
-        $encodedPath = P4_EncodePath $Path
-        [void] $args.Add($encodedPath)
+        [void] $args.Add("`"${Path}`"")  # must double-quote for Start-Process, also must NOT P4_Encode this path
     }
 
     if ($DryRun)
@@ -292,7 +291,7 @@ function ImportInBatches
 
                 # `p4 add -m` writes filenames in an Encoded format, so we need to decode it
                 # see: https://www.perforce.com/manuals/cmdref/Content/CmdRef/filespecs.html
-                $DecodedPath =& P4_DecodePath $Path
+                $DecodedPath = P4_DecodePath $Path
 
                 [void] $CurrentBucket.Add($DecodedPath)
 
