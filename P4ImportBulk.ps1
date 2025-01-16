@@ -40,7 +40,8 @@ Import-Module -Name $PSScriptRoot/Modules/P4.psm1
 
 $ScriptName = $MyInvocation.MyCommand.Name
 
-$SyncFileItem = Get-Item -Path $SyncFile 2> $null
+# Get-Item -Force is required on Mac+Linux for dotfiles
+$SyncFileItem = Get-Item -Force -Path $SyncFile 2> $null
 $ValidUsage = $false
 
 
