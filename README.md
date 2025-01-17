@@ -5,11 +5,10 @@ Xist's Unreal C++ Build & Dev Tools.  Requires PowerShell 7+.
 
 Main Branch: https://github.com/XistGG/UnrealXistTools/
 
-UnrealXistTools works on Windows, Mac and Linux.
+UnrealXistTools is intended to work on both Windows and Mac.
+Each tool below specifies the exact compatibility (some are Windows only).
 
-Some tools rely on underlying Epic apps that are Windows-only,
-but the vast majority of this is fully cross-platform.
-Each tool below specifies the exact compatibility.
+It should also mostly work on Linux, though I haven't tested it yet.
 
 ## Setup
 
@@ -17,8 +16,6 @@ Each tool below specifies the exact compatibility.
   - Mac: `brew install --cask powershell`
   - Windows: `winget install Microsoft.PowerShell`
     *(issues? [try this fix](https://github.com/microsoft/winget-cli/issues/3652#issuecomment-1909141458))*
-  - Linux: `sudo snap install powershell --classic`
-    *(or [this procedure](https://learn.microsoft.com/en-us/powershell/scripting/install/install-ubuntu?view=powershell-7.4))*
 - Clone this repository
 - Add this repository clone folder to your `$env:PATH`
 
@@ -531,7 +528,7 @@ command is doing when it runs.
 
 [view source: P4Config.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/P4Config.ps1)
 
-Compatibility: Mac + Windows
+Compatibility: Linux + Mac + Windows
 
 This helpful script can be used before you launch an IDE or other build tool
 that requires access to P4 but isn't smart enough to understand that you
@@ -563,7 +560,7 @@ P4Config.ps1 -Export -Debug
 
 [view source: P4EncodePath.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/P4EncodePath.ps1)
 
-Compatibility: Mac + Windows
+Compatibility: Linux + Mac + Windows
 
 Encodes or Decodes a P4 path.  See `-Help` for more details.
 
@@ -577,7 +574,7 @@ See `-Help` for Usage.
 
 [view source: P4FStat.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/P4FStat.ps1)
 
-Compatibility: Mac + Windows
+Compatibility: Linux + Mac + Windows
 
 Provides cross-platform object-based access to `p4 fstat filepath` results.
 
@@ -651,7 +648,7 @@ PS /Users/xist/dev/Xim> $result[1].depotFile
 
 [view source: P4ImportBulk.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/P4ImportBulk.ps1)
 
-Compatibility: Mac + Windows (only tested on Windows)
+Compatibility: Linux + Mac + Windows
 
 Import a massive number of files into a new depot without breaking P4.
 
@@ -660,6 +657,11 @@ Perhaps it is related to RAM availability?
 
 With this script, I can break the 800k+ files into batches and submit those,
 which works great.
+
+This script has mostly automatic error recovery, so when the Internet hiccups
+and you get failures due to connection errors (or any other errors), you can
+just restart the script and it will mostly-automatically pick up from the last
+successful `p4 add` result.
 
 Supports the `-Debug` flag, add it to any command to gain more insight.
 
@@ -670,7 +672,7 @@ See `-Help` for Usage.
 
 [view source: P4Info.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/P4Info.ps1)
 
-Compatibility: Mac + Windows
+Compatibility: Linux + Mac + Windows
 
 Extracts `p4 info` output into a Dictionary, which it returns as the result.
 
