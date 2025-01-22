@@ -5,6 +5,9 @@
 # Import INI.psm1 (required on Linux+Mac at least)
 Import-Module -Name $PSScriptRoot/INI.psm1
 
+# On Linux, custom engine information is stored in this INI file:
+$LinuxInstallIni = "~/.config/Epic/UnrealEngine/Install.ini"
+
 # On Mac, custom engine information is stored in this INI file:
 $MacInstallIni = "~/Library/Application Support/Epic/UnrealEngine/Install.ini"
 
@@ -147,14 +150,16 @@ function UE_GetEngineByAssociation
     throw "Not implemented: Obtain default Launcher-installed engine location in UE_GetEngineByAssociation"
 }
 
-function UE_ListCustomEngines_Mac
+function UE_ListCustomEngines_LinuxMac
 {
     [CmdletBinding()]
     param()
 
     $result = [System.Collections.ArrayList]@()
 
-    $installationPairs =& INI_ReadSection -Filename $MacInstallIni -Section "Installations"
+    $iniFile = $IsLinux ? $LinuxInstallIni : $MacInstallIni
+
+    $installationPairs =& INI_ReadSection -Filename $iniFile -Section "Installations"
 
     if ($installationPairs -and $installationPairs.Count -gt 0)
     {
@@ -221,15 +226,9 @@ function UE_ListCustomEngines
     [CmdletBinding()]
     param()
 
-    if ($IsLinux)
+    if ($IsLinux -or $IsMacOS)
     {
-        # TODO implement UE_ListCustomEngines for Linux
-        throw "Not implemented: UE_ListCustomEngines on Linux"
-    }
-
-    if ($IsMacOS)
-    {
-        return & UE_ListCustomEngines_Mac
+        return & UE_ListCustomEngines_LinuxMac
     }
 
     return & UE_ListCustomEngines_Windows
