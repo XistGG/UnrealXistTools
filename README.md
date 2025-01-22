@@ -351,7 +351,7 @@ if you want it to be named exactly the same, or choose some other name, etc.  It
 
 [view source: UEngine.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/UEngine.ps1)
 
-Compatibility: Mac + Windows
+Compatibility: Linux + Mac + Windows
 
 - By default selects the engine used by the current or named project
 - `-List` lists all available custom engines
