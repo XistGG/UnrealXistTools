@@ -252,15 +252,12 @@ function UE_RenameCustomEngine
         throw "NewName parameter is required for UE_RenameCustomEngine"
     }
 
-    if ($IsLinux)
+    if ($IsLinux -or $IsMacOS)
     {
-        throw "Not implemented: UE_RenameCustomEngine on Linux"
-    }
+        $iniFile = $IsLinux ? $LinuxInstallIni : $MacInstallIni
 
-    if ($IsMacOS)
-    {
         # Read the current INI to get the current [Installations] Name=Value pairs
-        $installationPairs =& INI_ReadSection -Filename $MacInstallIni -Section "Installations"
+        $installationPairs =& INI_ReadSection -Filename $iniFile -Section "Installations"
 
         if ($installationPairs)
         {
@@ -281,7 +278,7 @@ function UE_RenameCustomEngine
 
             # Rewrite the INI with the new [Installations] Name=Value pairs
             Write-Debug "Writing $($installationPairs.Count) custom engines to INI"
-            $success =& INI_WriteSection -Filename $MacInstallIni -Section "Installations" -Pairs $installationPairs
+            $success =& INI_WriteSection -Filename $iniFile -Section "Installations" -Pairs $installationPairs
         }
     }
 
