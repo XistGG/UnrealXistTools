@@ -31,11 +31,6 @@ param(
 # Import the UE helper module
 Import-Module -Name $PSScriptRoot/Modules/UE.psm1
 
-$BuildsRegistryKey = "HKEY_CURRENT_USER\Software\Epic Games\Unreal Engine\Builds"
-
-# TODO this only works on Win64! Need to upgrade this for other dev platforms
-$PlatformSpecificEditorPath = "Engine/Binaries/Win64/UnrealEditor.exe"
-
 
 function Usage
 {
@@ -96,7 +91,7 @@ if ($List)
     {
         Write-Error ("There are no custom Unreal Engine Builds in the Registry. " +
             "You need to run UnrealVersionSelector.exe in your Custom Engine Directory. " +
-            "Example: D:/UE_5.1/Engine/Binaries/Win64/UnrealVersionSelector-Win64-Shipping.exe")
+            "Example: D:/UE_5.1/Engine/Binaries/Win64/UnrealVersionSelector-Win64-Shipping.exe -register")
     }
     return $BuildList
 }
