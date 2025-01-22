@@ -5,14 +5,14 @@ Xist's Unreal C++ Build & Dev Tools.  Requires PowerShell 7+.
 
 Main Branch: https://github.com/XistGG/UnrealXistTools/
 
-UnrealXistTools is intended to work on both Windows and Mac.
-Each tool below specifies the exact compatibility (some are Windows only).
-
-It should also mostly work on Linux, though I haven't tested it yet.
+UnrealXistTools works on Windows, Mac and Linux.
+Each tool below specifies the exact compatibility.
 
 ## Setup
 
 - Make sure you are using PowerShell 7+
+  - Linux: see this official [Microsoft doc](https://learn.microsoft.com/en-us/powershell/scripting/install/install-ubuntu)
+    *(it's easy, just cut/paste)*
   - Mac: `brew install --cask powershell`
   - Windows: `winget install Microsoft.PowerShell`
     *(issues? [try this fix](https://github.com/microsoft/winget-cli/issues/3652#issuecomment-1909141458))*
@@ -118,7 +118,7 @@ I encourage you to research it further on your own.
 
 [view source: UAT.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/UAT.ps1)
 
-Compatibility: Windows + Mac
+Compatibility: Linux + Mac + Windows
 
 This is an easy interface to `RunUAT.bat` and/or `RunUAT.sh` which auto-computes
 a lot of otherwise required command-line arguments to those tools.
@@ -290,7 +290,7 @@ VS.ps1 -diff file1 file2
 
 [view source: MigrateUEMarketplacePlugin.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/MigrateUEMarketplacePlugin.ps1)
 
-Compatibility: Mac + Windows
+Compatibility: Mac + Windows *(+ Linux?)*
 
 Required Arguments:
 
@@ -351,7 +351,7 @@ if you want it to be named exactly the same, or choose some other name, etc.  It
 
 [view source: UEngine.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/UEngine.ps1)
 
-Compatibility: Mac + Windows
+Compatibility: Linux + Mac + Windows
 
 - By default selects the engine used by the current or named project
 - `-List` lists all available custom engines
@@ -398,7 +398,7 @@ UEngine.ps1 -Debug
 
 [view source: UProject.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/UProject.ps1)
 
-Compatibility: Mac + Windows
+Compatibility: Linux + Mac + Windows
 
 Returns JSON parsed contents of `$UProjectFile` as a PowerShell Object
 
@@ -421,7 +421,7 @@ $(UProject.ps1 project.uproject).EngineAssociation
 
 [view source: UProjectFile.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/UProjectFile.ps1)
 
-Compatibility: Mac + Windows
+Compatibility: Linux + Mac + Windows
 
 Returns the `.uproject` file relevant to the `-Path`
 (implicit first string parameter, or current directory by default).
@@ -457,6 +457,7 @@ Compatibility: Windows only
 
 Returns the `.sln` file relevant to the `-Path`
 (implicit first string parameter, or current directory by default).
+Only Windows (Visual Studio) generates `.sln` files so this is only useful there.
 
 Example: `/project/project.sln`
 
@@ -487,7 +488,7 @@ UProjectSln.ps1 project.sln
 
 [view source: P4AutoResolveToDefaultCL.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/P4AutoResolveToDefaultCL.ps1)
 
-Compatibility: Mac + Windows
+Compatibility: Mac + Windows *(+ Linux?)*
 
 Given a CL that contains for example an integrate result, where a lot of files
 need to be resolved, auto-resolve (no merging) every file that can be auto resolved,
@@ -695,7 +696,7 @@ Try the `-Debug` switch to see the parse info.
 
 [view source: P4ObliterateIgnoredFiles.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/P4ObliterateIgnoredFiles.ps1)
 
-Compatibility: Mac + Windows
+Compatibility: Linux + Mac + Windows
 
 Iterate through the local files, and for every file that SHOULD be ignored,
 yet exists in the P4 depot anyway, obliterate it from P4.
@@ -727,7 +728,7 @@ P4ObliterateIgnoredFiles.ps1 -Path . -y
 
 [view source: P4Reunshelve.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/P4Reunshelve.ps1)
 
-Compatibility: Mac + Windows
+Compatibility: Mac + Windows *(+ Linux?)*
 
 "Reunshelve" will repeatedly unshelve files into the current workspace.
 

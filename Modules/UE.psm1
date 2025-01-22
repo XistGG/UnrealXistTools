@@ -5,6 +5,9 @@
 # Import INI.psm1 (required on Linux+Mac at least)
 Import-Module -Name $PSScriptRoot/INI.psm1
 
+# On Linux, custom engine information is stored in this INI file:
+$LinuxInstallIni = "~/.config/Epic/UnrealEngine/Install.ini"
+
 # On Mac, custom engine information is stored in this INI file:
 $MacInstallIni = "~/Library/Application Support/Epic/UnrealEngine/Install.ini"
 
@@ -147,14 +150,16 @@ function UE_GetEngineByAssociation
     throw "Not implemented: Obtain default Launcher-installed engine location in UE_GetEngineByAssociation"
 }
 
-function UE_ListCustomEngines_Mac
+function UE_ListCustomEngines_LinuxMac
 {
     [CmdletBinding()]
     param()
 
     $result = [System.Collections.ArrayList]@()
 
-    $installationPairs =& INI_ReadSection -Filename $MacInstallIni -Section "Installations"
+    $iniFile = $IsLinux ? $LinuxInstallIni : $MacInstallIni
+
+    $installationPairs =& INI_ReadSection -Filename $iniFile -Section "Installations"
 
     if ($installationPairs -and $installationPairs.Count -gt 0)
     {
@@ -221,15 +226,9 @@ function UE_ListCustomEngines
     [CmdletBinding()]
     param()
 
-    if ($IsLinux)
+    if ($IsLinux -or $IsMacOS)
     {
-        # TODO implement UE_ListCustomEngines for Linux
-        throw "Not implemented: UE_ListCustomEngines on Linux"
-    }
-
-    if ($IsMacOS)
-    {
-        return & UE_ListCustomEngines_Mac
+        return & UE_ListCustomEngines_LinuxMac
     }
 
     return & UE_ListCustomEngines_Windows
@@ -253,15 +252,12 @@ function UE_RenameCustomEngine
         throw "NewName parameter is required for UE_RenameCustomEngine"
     }
 
-    if ($IsLinux)
+    if ($IsLinux -or $IsMacOS)
     {
-        throw "Not implemented: UE_RenameCustomEngine on Linux"
-    }
+        $iniFile = $IsLinux ? $LinuxInstallIni : $MacInstallIni
 
-    if ($IsMacOS)
-    {
         # Read the current INI to get the current [Installations] Name=Value pairs
-        $installationPairs =& INI_ReadSection -Filename $MacInstallIni -Section "Installations"
+        $installationPairs =& INI_ReadSection -Filename $iniFile -Section "Installations"
 
         if ($installationPairs)
         {
@@ -282,7 +278,7 @@ function UE_RenameCustomEngine
 
             # Rewrite the INI with the new [Installations] Name=Value pairs
             Write-Debug "Writing $($installationPairs.Count) custom engines to INI"
-            $success =& INI_WriteSection -Filename $MacInstallIni -Section "Installations" -Pairs $installationPairs
+            $success =& INI_WriteSection -Filename $iniFile -Section "Installations" -Pairs $installationPairs
         }
     }
 
