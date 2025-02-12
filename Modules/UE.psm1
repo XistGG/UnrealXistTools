@@ -19,10 +19,22 @@ function UE_GetEngineConfig
     [CmdletBinding()]
     param(
         [string]$BuildConfig = "Development",
-
-        [Parameter(Mandatory=$true)]
-        [string]$EngineDir
+        [string]$EngineDir,
+        [string]$EngineRoot
     )
+
+    if ($EngineRoot -ne '' -and $EngineDir -eq '')
+    {
+        $EngineDir = Join-Path $EngineRoot "Engine"
+    }
+    elseif ($EngineDir -ne '' -and $EngineRoot -eq '')
+    {
+        $EngineRoot = Join-Path $EngineDir ".."
+    }
+    else
+    {
+        throw "You must either pass -EngineDir or -EngineRoot to UE_GetEngineConfig"
+    }
 
     $scriptExtension = ".bat"
     $exeExtension = ".exe"
@@ -83,6 +95,7 @@ function UE_GetEngineConfig
         Platform = $platform
         UAT = Join-Path $batchFilesDir "RunUAT$scriptExtension"
         UBT = Join-Path $batchFilesDir "RunUBT$scriptExtension"
+        GenerateProjectFiles = Join-Path $EngineRoot "GenerateProjectFiles$scriptExtension"
     }
 
     return $result
