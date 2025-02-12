@@ -28,14 +28,18 @@ param(
 # Make sure the powershell version is good, or throw an exception
 & $PSScriptRoot/PSVersionCheck.ps1
 
+# Import the UE helper module
+Import-Module -Name $PSScriptRoot/Modules/UE.psm1
+
 # Determine which UProjectFile we will clean
+$UProject =& $PSScriptRoot/UProject.ps1 -Path:$Path
 
-$UProjectFile = & $PSScriptRoot\UProjectFile.ps1 -Path:$Path
-
-if (!$UProjectFile)
+if (!$UProject)
 {
-    throw "No UProjectFile selected for clean"
+    throw "No .uproject selected for clean"
 }
+
+$UProjectFile = Get-Item -Path $UProject._UProjectFile
 
 # If the -Nuke switch is set, then explicitly set all the optional deletion flags
 if ($Nuke)
@@ -49,6 +53,9 @@ if ($Nuke)
 ################################################################################
 ###  Find Binaries + Intermediate + other temporary files
 ################################################################################
+
+# Make sure we're in the project directory before doing file operations
+cd $UProjectFile.Directory
 
 Write-Host "Scanning files & directories..."
 
@@ -130,4 +137,27 @@ if ($DryRun)
     exit 151
 }
 
-. $PSScriptRoot\UnrealVersionSelector.ps1 -ProjectFiles $UProjectFile.FullName
+if ($IsWindows)
+{
+    # UnrealVersionSelector.ps1 only works on Windows, so we'll use it.
+    # The advantage here is this works with Launcher-installed engines as well as custom engines.
+    . $PSScriptRoot\UnrealVersionSelector.ps1 -ProjectFiles $UProjectFile.FullName
+}
+else
+{
+    # Epic's UnrealVersionSelector does not work on Linux/Mac.
+
+    # On Linux/Mac, look up the UEngine associated with this .uproject,
+    # then explicitly run GenerateProjectFiles.sh for the appropriate Engine
+    $UEngine =& UE_GetEngineByAssociation -UProjectFile $UProjectFile.FullName -EngineAssociation $UProject.EngineAssociation
+
+    # Note that UE_GetEngineByAssociation doesn't know how to find Launcher-installed engines
+    # on Linux/Mac platforms.
+    #
+    # It can only find custom compiled engines, so it may have thrown an exception.
+    # If it didn't, regenerate project files.
+    $UEngineConfig =& UE_GetEngineConfig -EngineRoot $UEngine.Root
+
+    # Execute the engine's GenerateProjectFiles.sh
+    & $UEngineConfig.GenerateProjectFiles
+}

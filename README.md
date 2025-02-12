@@ -136,7 +136,7 @@ UAT.ps1 Lyra.uproject -Config Development -Target LyraGameEOS -Build -Cook -Stag
 
 [view source: UProjectClean.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/UProjectClean.ps1)
 
-Compatibility: Windows only
+Compatibility: Linux + Mac + Windows
 
 - Delete all `Binaries` (generated data)
 - Delete all `Intermediate` (generated data)
@@ -147,6 +147,10 @@ Compatibility: Windows only
 - Generate Project Files
 
 Supports the `-Debug` flag, add it to any command to gain more insight.
+
+Note: On Linux/Mac, the Generate Project Files portion only works if your project uses a custom engine.
+For projects that use a Launcher-installed engine on those platforms, there is no way to know where you
+installed those engines. On Windows this isn't an issue.
 
 ### Usage Examples
 
