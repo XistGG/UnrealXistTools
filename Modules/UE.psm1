@@ -112,22 +112,42 @@ function UE_GetEngineByAssociation
             throw "Invalid UProjectFile `"$UProjectFile`"; you must give a valid one with an empty EngineAssociation"
         }
 
-        # Compute the path to the .uproject's ../ dir, in which the Engine dir is expected to reside
-        # $UProjectFile                                                # /path/to/Project/Project.uproject
-        $uProjectDir = Split-Path -Path $UProjectFile -Parent          # /path/to/Project
-        $engineRootDir = Split-Path -Path $uProjectDir -Parent         # /path/to
+        # Traverse up the path of the .uproject dir until we find a dir with an "Engine" dir in it.
+        $pathArray = $UProjectFile -replace '[\\/]', '/' -split '/'
 
-        $result.Root = $engineRootDir
+        # Start at $pathArray.Count - 3 because the last 2 are "Project/Project.uproject"
+        # so we know they cannot be the Engine root.
+        $engineRootDir = $null
+        for ($i = $pathArray.Count - 3; $i -ge 0; $i--)
+        {
+            $tempRoot = ($pathArray[0..$i]) -join [System.IO.Path]::DirectorySeparatorChar
+            $testPath = Join-Path $tempRoot "Engine"
+            if (Test-Path -Path $testPath -PathType Container)
+            {
+                # Stop as soon as we find the first Engine dir
+                $engineRootDir = $tempRoot
+                break
+            }
+        }
+
+        $result.Root = $engineRootDir  # possibly $null
 
         # We've determined the Engine Root, we need to look up the real name of the Engine
         # on this system (it's not really "" which is what the .uproject states).
         # Try to select the engine by its root dir, and if we find one, use its values.
-        $registeredEngine =& UE_SelectCustomEngine -Root $engineRootDir
-        if ($registeredEngine)
+        if ($engineRootDir -ne $null)
         {
-            $result = $registeredEngine
+            $registeredEngine =& UE_SelectCustomEngine -Root $engineRootDir
+
+            if ($registeredEngine)
+            {
+                $result = $registeredEngine
+                # Here we expect $result.Name to have been set to whatever the actual custom engine name is,
+                # replacing the "" value found in the .uproject file
+            }
         }
-        else
+
+        if ($result.Name -eq "")
         {
             # This is likely an unregistered custom engine root with no name.
             # Theoretically it should register itself the first time you actually run it.
