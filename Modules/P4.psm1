@@ -532,6 +532,145 @@ function P4_GetChange
     return $result
 }
 
+function P4_ParseChangeDescription
+{
+    param(
+        [Parameter(Mandatory=$true, Position=0)]
+        [System.Collections.ArrayList] $Content
+    )
+
+    # The first line must be "Change <CL> by <user>@<host> on <date>"
+    if (-not($Content[0] -match "^Change (\d+) by ([^@]+)@(\S*) on ([\d\-/ \:]+)\s*$"))
+    {
+        $message = "Invalid change identity at line 1/$($Content.Count)"
+        throw [P4_Parse_Exception]::new($message)
+    }
+
+    $result = [PSCustomObject]@{
+        Change = $matches[1]
+        User = $matches[2]
+        Client = $matches[3]
+        Date = $matches[4]
+        Description = $null
+        Files = New-Object System.Collections.ArrayList
+    }
+
+    # The following lines are the CL description, until we get to "Affected files ..."
+    $descTemp = New-Object System.Collections.ArrayList
+    for ($i=1; $i -lt $Content.Count; $i++)  # NOTICE: start at 1, skip first line
+    {
+        $line = $Content[$i]
+        $lineNum = $i + 1
+
+        if ($line -eq $null)
+        {
+            $message = "Unexpected null found at line $lineNum/$($Content.Count)"
+            throw [P4_Parse_Exception]::new($message)
+        }
+
+        if ($line -eq "Affected files ...")
+        {
+            # We've finished reading the description
+            # Skip this line
+            $i++
+            break
+        }
+
+        # Trim leading & trailing whitespace from description lines
+        [void] $descTemp.Add(($line -replace '(^\s+|\s+$)', ''))
+    }
+
+    if ($descTemp.Count -gt 2 -and $descTemp[0] -eq "" -and $descTemp[$descTemp.Count-1] -eq "")
+    {
+        # Skip the first and the last line, they are empty
+        $result.Description = $descTemp[1..($descTemp.Count-2)] -join [Environment]::NewLine
+    }
+    else
+    {
+        # Unexpected output format, keep it as-is
+        $result.Description = $descTemp -join [Environment]::NewLine
+    }
+
+    # The following lines are "... //Depot/File#rev changeType"
+    # with possible empty lines
+
+    for (; $i -lt $Content.Count; $i++)  # NOTICE: DO NOT RESET $i, keep processing the rest of the content
+    {
+        $line = $Content[$i]
+        $lineNum = $i + 1
+
+        if ($line -eq $null)
+        {
+            $message = "Unexpected null found at line $lineNum/$($Content.Count)"
+            throw [P4_Parse_Exception]::new($message)
+        }
+
+        if ($line -eq "") { continue }
+
+        if ($line -match "^\.\.\.\s+([^#]+)#(\d+)\s+(.*)$")
+        {
+            $fileOp = [PSCustomObject]@{
+                Path = P4_DecodePath -Path $matches[1]
+                Revision = [Convert]::ToInt32($matches[2])
+                ChangeType = $matches[3]
+            }
+
+            [void] $result.Files.Add($fileOp)
+            continue
+        }
+
+        # Anything else is an unexpected line
+        $message = "Unexpected content at line $lineNum/$($Content.Count) near `"$line`""
+        throw [P4_Parse_Exception]::new($message)
+    }
+
+    return $result
+}
+
+function P4_Describe
+{
+    param(
+        [Parameter(Position=0)]
+        [string] $CL
+    )
+
+    if ($CL -eq $null -or $CL -eq "default")
+    {
+        throw "You must specify a submitted CL for P4_Describe"
+    }
+
+    $args = New-Object System.Collections.ArrayList
+    [void] $args.Add('describe')
+    [void] $args.Add('-s')
+    [void] $args.Add($CL)
+
+    $command = "p4 $($args -join ' ')"
+    Write-Debug "EXEC: $command"
+
+    $output = p4 @args
+
+    if ($LASTEXITCODE -ne 0)
+    {
+        throw [P4_Exception]::new($command, $LASTEXITCODE)
+    }
+
+    # Split on lines regardless of which platform created the specification,
+    # even if it was different from the current platform
+    $lines = $output -split "(?:`r?`n|`r)"
+
+    # Note this may throw; let it propagate if it does
+    $result = P4_ParseChangeDescription -Content $lines
+
+    # If the parse didn't yield the CL we requested, that's a problem
+    if ($result.Change -ne $CL)
+    {
+        throw [P4_Parse_Exception]::new("Command did not return a valid change description: $command")
+    }
+
+    return $result
+}
+
 Export-ModuleMember -Function P4_DecodePath, P4_EncodePath, P4_ParseFileType, P4_ParseChangeLine
 Export-ModuleMember -Function P4_FilterIgnoredPaths, P4_GetPendingChangeLists, P4_FStat
 Export-ModuleMember -Function P4_ParseSpecification, P4_GetChange
+Export-ModuleMember -Function P4_Describe
