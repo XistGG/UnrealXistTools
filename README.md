@@ -104,6 +104,9 @@ I encourage you to research it further on your own.
     (tested by importing 800k+ files from UDN P4 `//UE5/Release-5.2`)
 - [P4Info.ps1](#p4infops1)
   - Makes it real easy to extract `p4 info` values
+- [P4LastGreenBuild.ps1](#p4lastgreenbuildps1)
+  - Show the `Paths` array for the `//UE5/Dev-Main-LastGreenBuild` virtual stream
+  - Makes it super simple to know which CL to sync to in `//UE5/Main`
 - [P4ObliterateIgnoredFiles.ps1](#p4obliterateignoredfilesps1)
   - Recursively scan the given path, searching for files that were added to p4
     but are supposed to be ignored, and obliterate any such files from the p4 server.
@@ -694,6 +697,22 @@ P4Info.ps1 -Config > .p4config
 ```
 
 Try the `-Debug` switch to see the parse info.
+
+
+# P4LastGreenBuild.ps1
+
+[view source: P4LastGreenBuild.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/P4LastGreenBuild.ps1)
+
+Compatibility: Linux + Mac + Windows
+
+Extracts `p4 stream -o //UE5/Dev-Main-LastGreenBuild` output and returns just the `Paths` array.
+
+You can then sync `//UE5/Main` to the CL displayed in the output.
+
+```powershell
+PS> P4LastGreenBuild.ps1
+import ... //UE5/Main/...@40123400
+```
 
 
 # P4ObliterateIgnoredFiles.ps1
