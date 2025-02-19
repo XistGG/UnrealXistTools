@@ -670,7 +670,51 @@ function P4_Describe
     return $result
 }
 
+function P4_StreamInfo
+{
+    param(
+        [Parameter(Position=0)]
+        [string] $Stream
+    )
+
+    if ($Stream -eq $null -or $Stream -eq "")
+    {
+        throw "You must specify a Stream for P4_StreamInfo"
+    }
+
+    $args = New-Object System.Collections.ArrayList
+    [void] $args.Add('stream')
+    [void] $args.Add('-o')
+    [void] $args.Add($Stream)
+
+    $command = "p4 $($args -join ' ')"
+    Write-Debug "EXEC: $command"
+
+    $output = p4 @args
+
+    if ($LASTEXITCODE -ne 0)
+    {
+        throw [P4_Exception]::new($command, $LASTEXITCODE)
+    }
+
+    # Split on lines regardless of which platform created the specification,
+    # even if it was different from the current platform
+    $lines = $output -split "(?:`r?`n|`r)"
+
+    # Note this may throw; let it propagate if it does
+    $result = P4_ParseSpecification -Content $lines
+
+    # We expect to have gotten info on the stream we requested
+    if ($result.Stream -ne $Stream)
+    {
+        throw [P4_Parse_Exception]::new("Command did not return the expected Stream info: $command")
+    }
+
+    return $result
+}
+
 Export-ModuleMember -Function P4_DecodePath, P4_EncodePath, P4_ParseFileType, P4_ParseChangeLine
 Export-ModuleMember -Function P4_FilterIgnoredPaths, P4_GetPendingChangeLists, P4_FStat
 Export-ModuleMember -Function P4_ParseSpecification, P4_GetChange
 Export-ModuleMember -Function P4_Describe
+Export-ModuleMember -Function P4_StreamInfo
