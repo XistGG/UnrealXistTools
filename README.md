@@ -111,6 +111,10 @@ I encourage you to research it further on your own.
   - Recursively scan the given path, searching for files that were added to p4
     but are supposed to be ignored, and obliterate any such files from the p4 server.
     - Note: obliterate requires admin access to the p4 server.
+- [P4RemergeLyraExample.ps1](#p4remergelyraexampleps1)
+  - An example of how to use `P4RemergeSidestream.ps1` for a `LyraStarterGame` project
+- [P4RemergeSidestream.ps1](#p4remergesidestreamps1)
+  - Helps to re-merge CLs from "side streams", very helpful for Lyra projects to update Lyra
 - [P4Reunshelve.ps1](#p4reunshelveps1)
   - Easy repetitive "revert changes and re-unshelve"
   - Useful when coding on 1 workstation and testing on multiple other workstations
@@ -745,6 +749,70 @@ under the current directory (`-Path .`):
 ```powershell
 P4ObliterateIgnoredFiles.ps1 -Path . -y
 ```
+
+
+# P4RemergeLyraExample.ps1
+
+[view source: P4RemergeLyraExample.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/P4RemergeLyraExample.ps1)
+
+Compatibility: Mac + Windows *(+ Linux?)*
+
+An example customization of `P4RemergeSidestream.ps1` for my Lyra-based project `Xim`
+that establishes some source filename rewrites.
+
+See `P4RemergeSidestream.ps1` for more info.
+
+
+# P4RemergeSidestream.ps1
+
+[view source: P4RemergeSidestream.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/P4RemergeSidestream.ps1)
+
+Compatibility: Mac + Windows *(+ Linux?)*
+
+Re-merge a CL from a "side stream" into the current stream.
+
+I have a project in a stream with a custom engine. This project is based on Lyra,
+and I wish to pull Lyra updates from Epic periodically.
+
+In addition to my project stream, I have a dedicated Lyra stream which mirrors
+Epic's `//UE5/Main/Samples/Games/Lyra/...` into my own `//XE/Lyra-Epic`.
+I then manage my own updates in a child stream `//XE/Lyra-Xist`, and this child
+stream is the base for my games. *(For more info on this setup, see my
+[Perforce docs](https://x157.github.io/Perforce/))*.
+
+TLDR: my `//XE/Lyra-Xist` stream contains ONLY the Lyra project, with all of my
+customizations on it, but my local project IS NOT BASED on this stream.
+
+Any time I merge Epic's official Lyra `//XE/Lyra-Epic` into my custom `//XE/Lyra-Xist`,
+I then **also** want to make those same merges into all my custom Lyra projects.
+
+This is where `P4RemergeSidestream.ps1` comes in.  I execute it on `//XE/Lyra-Xist`
+for the CL where the merge occurred (or any/all CLs I want, to effectively replay those
+on my local project stream).
+
+For example, here I'm re-merging the `//XE/Lyra-Xist` CL 362 commit into my local project
+directory.  After running this, I `p4 reconcile` and manually edit files with conflicts.
+
+```powershell
+P4RemergeSidestream.ps1 -CL 362 -SourceDepot //XE/Lyra-Xist -SourceDir D:\Dev\Lyra-Xist -LocalDir D:\MyEngine\MyProject
+```
+
+Because I do things like rename `Lyra.uproject` and `Lyra*.Target.cs` files,
+this script also supports optional source filename rewriting.
+See [`P4RemergeLyraExample.ps1`](#p4remergelyraexampleps1) for an example
+of how to rewrite Lyra files that persist for future merges.
+
+Overall the process I use to get Lyra updates from Epic is like:
+
+1. p4 sync `//UE5/Main/Samples/Games/Lyra/...@LastGreenBuild`
+2. reconcile + submit to `//XE/Lyra-Epic`
+3. merge `//XE/Lyra-Epic` into `//XE/Lyra-Xist` (note `Lyra-Xist` CL #362)
+4. re-merge `Lyra-Xist` #362 into each of my Lyra projects using this script
+5. reconcile + submit Lyra projects
+
+Note if your Lyra project derives **directly** from your own `//XE/Lyra-Xist`
+then you don't need to do this.  It's only when you've added a Lyra project
+to a custom engine Stream that this script may become necessary.
 
 
 # P4Reunshelve.ps1
