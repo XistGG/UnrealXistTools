@@ -12,6 +12,7 @@ param(
     [switch]$Run,
     [switch]$Server,
     [switch]$Stage,
+    [switch]$FullCook,
     [switch]$Help,
     [Parameter(Position = 0)]$Path
 )
@@ -105,6 +106,8 @@ $args = @(
 
 $UAT = $EngineConfig.UAT
 
+$Cook = $Cook -or $FullCook;  # -FullCook implies -Cook
+
 if ($Cook -or $Run -or $Stage)
 {
     $args = @(
@@ -120,7 +123,8 @@ if ($Cook -or $Run -or $Stage)
     if ($Build)        { $args += "-Build" }
     if ($Server)       { $args += "-Server" }
 
-    if ($Cook)         { $args += "-Cook" }
+    # By default, -Cook is iterative. Use -FullCook to disable iterative cooking.
+    if ($Cook)         { $args += "-Cook";    if (!$FullCook) { $args += "-Iterative" } }
     if ($Run)          { $args += "-Run" }
     if ($Stage)        { $args += "-Stage" }
 }
