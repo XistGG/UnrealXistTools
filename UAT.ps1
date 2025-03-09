@@ -100,8 +100,7 @@ if (!(Test-Path -Path $EngineDir -PathType Container))
 $EngineConfig =& UE_GetEngineConfig -BuildConfig:$Config -EngineDir:$EngineDir
 
 $args = @(
-    "-ScriptsForProject=$UProjectFile",
-    "-NoCompileUAT"
+    "-ScriptsForProject=$UProjectFile"
     )
 
 $UAT = $EngineConfig.UAT
@@ -139,8 +138,7 @@ elseif ($Build)
     $args = @(
         $Target,
         $EngineConfig.Platform,
-        $Config,
-        "-SkipUBTBuild"
+        $Config
         )
 }
 else
