@@ -126,7 +126,9 @@ if ($Cook -or $Run -or $Stage)
     # By default, -Cook is iterative. Use -FullCook to disable iterative cooking.
     if ($Cook)         { $args += "-Cook";    if (!$FullCook) { $args += "-Iterative" } }
     if ($Run)          { $args += "-Run" }
-    if ($Stage)        { $args += "-Stage" }
+
+    # -Stage requires either -Cook or -SkipCook
+    if ($Stage)        { $args += "-Stage";   if (!$Cook) { $args += "-SkipCook" } }
 }
 elseif ($Build)
 {
