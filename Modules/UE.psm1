@@ -386,7 +386,8 @@ function UE_SelectCustomEngine
         }
     }
 
-    Write-Warning "Query for Custom Engine (-Name `"$Name`") or (-Root `"$Root`") failed to find a match"
+    # This happens on build servers with unregistered engines in random locations.
+    Write-Debug "Query for Custom Engine (-Name `"$Name`") or (-Root `"$Root`") failed to find a match"
     return $null
 }
 
