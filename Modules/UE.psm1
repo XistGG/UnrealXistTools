@@ -192,7 +192,7 @@ function UE_ListCustomEngines_LinuxMac
 
     $iniFile = $IsLinux ? $LinuxInstallIni : $MacInstallIni
 
-    $installationPairs =& INI_ReadSection -Filename $iniFile -Section "Installations"
+    $installationPairs =& INI_ReadSection -Filename $iniFile -Section "Installations" -MayNotExist
 
     if ($installationPairs -and $installationPairs.Count -gt 0)
     {
@@ -290,7 +290,7 @@ function UE_RenameCustomEngine
         $iniFile = $IsLinux ? $LinuxInstallIni : $MacInstallIni
 
         # Read the current INI to get the current [Installations] Name=Value pairs
-        $installationPairs =& INI_ReadSection -Filename $iniFile -Section "Installations"
+        $installationPairs =& INI_ReadSection -Filename $iniFile -Section "Installations" -MayNotExist
 
         if ($installationPairs)
         {

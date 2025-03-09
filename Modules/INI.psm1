@@ -6,12 +6,18 @@ function INI_ReadSection
 {
     param(
         [string]$Filename,
-        [string]$Section
+        [string]$Section,
+        [switch]$MayNotExist
     )
 
     if (!(Test-Path $Filename))
     {
-        Write-Warning "No such INI file: $Filename"
+        if (-not $MayNotExist)
+        {
+            # The caller isn't aware that this file may not exist (causing us to return $null),
+            # so warn them about it to make them aware.
+            Write-Warning "No such INI file: $Filename"
+        }
         return $null
     }
 
