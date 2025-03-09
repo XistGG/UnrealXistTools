@@ -55,7 +55,7 @@ if ($Nuke)
 ################################################################################
 
 # Make sure we're in the project directory before doing file operations
-cd $UProjectFile.Directory
+Push-Location $UProjectFile.Directory
 
 Write-Host "Scanning files & directories..."
 
@@ -131,33 +131,44 @@ if (($TempDirs.count + $TempFiles.count) -gt 0)
 ###  Generate Project Files
 ################################################################################
 
-if ($DryRun)
+try
 {
-    Write-Warning "Exiting without generating project files due to -DryRun"
-    exit 151
+    if ($DryRun)
+    {
+        Write-Warning "Exiting without generating project files due to -DryRun"
+        exit 151
+    }
+
+    if ($IsWindows)
+    {
+        # UnrealVersionSelector.ps1 only works on Windows, so we'll use it.
+        # The advantage here is this works with Launcher-installed engines as well as custom engines.
+        . $PSScriptRoot\UnrealVersionSelector.ps1 -ProjectFiles $UProjectFile.FullName
+        # NOTICE: UnrealVersionSelector.ps1 calls exit()
+    }
+    else
+    {
+        # Epic's UnrealVersionSelector does not work on Linux/Mac.
+
+        # On Linux/Mac, look up the UEngine associated with this .uproject,
+        # then explicitly run GenerateProjectFiles.sh for the appropriate Engine
+        $UEngine =& UE_GetEngineByAssociation -UProjectFile $UProjectFile.FullName -EngineAssociation $UProject.EngineAssociation
+
+        # Note that UE_GetEngineByAssociation doesn't know how to find Launcher-installed engines
+        # on Linux/Mac platforms.
+        #
+        # It can only find custom compiled engines, so it may have thrown an exception.
+        # If it didn't, regenerate project files.
+        $UEngineConfig =& UE_GetEngineConfig -EngineRoot $UEngine.Root
+
+        # Execute the engine's GenerateProjectFiles.sh
+        & $UEngineConfig.GenerateProjectFiles
+        exit $LASTEXITCODE
+    }
 }
-
-if ($IsWindows)
+finally
 {
-    # UnrealVersionSelector.ps1 only works on Windows, so we'll use it.
-    # The advantage here is this works with Launcher-installed engines as well as custom engines.
-    . $PSScriptRoot\UnrealVersionSelector.ps1 -ProjectFiles $UProjectFile.FullName
-}
-else
-{
-    # Epic's UnrealVersionSelector does not work on Linux/Mac.
-
-    # On Linux/Mac, look up the UEngine associated with this .uproject,
-    # then explicitly run GenerateProjectFiles.sh for the appropriate Engine
-    $UEngine =& UE_GetEngineByAssociation -UProjectFile $UProjectFile.FullName -EngineAssociation $UProject.EngineAssociation
-
-    # Note that UE_GetEngineByAssociation doesn't know how to find Launcher-installed engines
-    # on Linux/Mac platforms.
-    #
-    # It can only find custom compiled engines, so it may have thrown an exception.
-    # If it didn't, regenerate project files.
-    $UEngineConfig =& UE_GetEngineConfig -EngineRoot $UEngine.Root
-
-    # Execute the engine's GenerateProjectFiles.sh
-    & $UEngineConfig.GenerateProjectFiles
+    # Ensure the calling PowerShell session is in the same directory after running this script
+    # as it was when it started running this script
+    Pop-Location
 }
