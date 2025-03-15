@@ -246,7 +246,7 @@ UnrealVersionSelector.ps1 -SwitchVersionSilent /Project/Root/Engine/Binaries/../
 
 [view source: Rider.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/Rider.ps1)
 
-Compatibility: Mac + Windows
+Compatibility: Linux + Mac + Windows
 
 Start Rider: Open the `.uproject` associated with the current directory.
 
