@@ -63,5 +63,24 @@ else
 & $PSScriptRoot/P4Config.ps1 -Export -Path $RiderFile.Directory.FullName
 
 # Start Rider in the requested mode
-Write-Debug "EXEC: Rider [$RiderCommand] on [$($RiderFile.FullName)]"
-& $RiderCommand $RiderFile.FullName
+
+if ($IsLinux)
+{
+    # In Linux, we need to force Rider into the background and suppress its output.
+    # We'll use nohup for that.
+
+    # PowerShell won't let us redirect BOTH stderr AND stdout to /dev/null because reasons,
+    # so we'll use bash output redirection to do that.
+
+    $startCommand = @( "bash", "-c", "`"$RiderCommand $($RiderFile.FullName)`"",
+        ">", "/dev/null", "2>&1" )
+    Write-Debug "EXEC: nohup $startCommand"
+    Start-Process -NoNewWindow -FilePath nohup -ArgumentList $startCommand -RedirectStandardError /dev/null
+}
+else
+{
+    # In Windows/Mac, this is automatically backgrounded and there is no output to consider.
+
+    Write-Debug "EXEC: Rider [$RiderCommand] on [$($RiderFile.FullName)]"
+    & $RiderCommand $RiderFile.FullName
+}
