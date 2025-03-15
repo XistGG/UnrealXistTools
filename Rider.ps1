@@ -72,10 +72,9 @@ if ($IsLinux)
     # PowerShell won't let us redirect BOTH stderr AND stdout to /dev/null because reasons,
     # so we'll use bash output redirection to do that.
 
-    $startCommand = @( "bash", "-c", "`"$RiderCommand $($RiderFile.FullName)`"",
-        ">", "/dev/null", "2>&1" )
-    Write-Debug "EXEC: nohup $startCommand"
-    Start-Process -NoNewWindow -FilePath nohup -ArgumentList $startCommand -RedirectStandardError /dev/null
+    $bashArgs = @( "-c", "`"nohup $RiderCommand $($RiderFile.FullName) > /dev/null 2>&1`"" )
+    Write-Debug "EXEC: bash $bashArgs"
+    Start-Process -NoNewWindow -FilePath bash -ArgumentList $bashArgs
 }
 else
 {
