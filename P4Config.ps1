@@ -25,6 +25,9 @@ param(
 
 $ScriptName = $MyInvocation.MyCommand.Name
 
+# If user defined a custom .p4config filename, use it, else use P4 default .p4config
+$P4ConfigFilename = if ($env:P4CONFIG) {$env:P4CONFIG} else {".p4config"}
+
 
 ################################################################################
 ##  Functions
@@ -44,14 +47,14 @@ function FindP4ConfigFile()
     }
 
     # Try to find .p4config in $Directory
-    Write-Debug "Searching for .p4config in: $($dir.FullName)"
-    $filename = Join-Path $dir.FullName ".p4config"
+    Write-Debug "Searching for $P4ConfigFilename in: $($dir.FullName)"
+    $filename = Join-Path $dir.FullName $P4ConfigFilename
     $p4config = Get-ChildItem -Path $filename -File -Force 2> $null
 
     # If we found a .p4config in this $Directory, return it
     if ($p4config -and $p4config.Exists)
     {
-        Write-Debug "Found .p4config: $($p4config.FullName)"
+        Write-Debug "Found ${P4ConfigFilename}: $($p4config.FullName)"
         return $p4config
     }
 
@@ -124,7 +127,7 @@ function GetP4Config()
             else
             {
                 Write-Error "Malformed line detected in $($P4ConfigItem.FullName)"
-                throw "Error in .p4config line $LineNum near: $line"
+                throw "Error in $($P4ConfigItem.Name) line $LineNum near: $line"
             }
         }
     }
@@ -166,7 +169,7 @@ if (!$p4config)
 {
     # Write to stdout so the dev knows why they don't have any p4config
     # in the $ENV; it's because there is no relevant file anywhere!
-    Write-Host "${ScriptName}: No relevant .p4config found"
+    Write-Host "${ScriptName}: No relevant $P4ConfigFilename found. To create one, run `"P4Info.ps1 -Config > $P4ConfigFilename`""
     return $null
 }
 
