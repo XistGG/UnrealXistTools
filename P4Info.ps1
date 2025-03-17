@@ -43,8 +43,17 @@ if ($Config -and $P4Info)
 {
     $P4Config = New-Object "System.Collections.Generic.List[string]"
 
+	# The "Peer address" is not a usable value for future connections.
+	# It's really only good for debugging.
+    #-if ($P4Info["Peer address"]) { [void] $P4Config.Add("P4PORT=$($P4Info["Peer address"])") }
+    #
+    # Instead, include the current $env:P4PORT, if any
+    if ($env:P4PORT)
+    {
+    	[void] $P4Config.Add("P4PORT=$($env:P4PORT)")
+    }
+
     if ($P4Info["User name"]) { [void] $P4Config.Add("P4USER=$($P4Info["User name"])") }
-    if ($P4Info["Peer address"]) { [void] $P4Config.Add("P4PORT=$($P4Info["Peer address"])") }
     if ($P4Info["Client name"]) { [void] $P4Config.Add("P4CLIENT=$($P4Info["Client name"])") }
 
     return $P4Config -join [System.Environment]::NewLine
