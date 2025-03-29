@@ -56,8 +56,10 @@ I encourage you to research it further on your own.
 # IDE Tools
 
 - [Rider.ps1](#riderps1)
+  - Export `.p4config` to Rider Environment
   - Edit a project in Rider
 - [VS.ps1](#vsps1)
+	- Export `.p4config` to Visual Studio Environment
   - Edit a project in Visual Studio
 
 
@@ -248,21 +250,36 @@ UnrealVersionSelector.ps1 -SwitchVersionSilent /Project/Root/Engine/Binaries/../
 
 Compatibility: Linux + Mac + Windows
 
-Start Rider: Open the `.uproject` associated with the current directory.
+Start Rider: Open the `.uproject` associated with the named project/file,
+by default: the project in the current directory, if any.
 
 Uses [`P4Config.ps1`](#p4configps1) to search for any relevant `.p4config`
 and if one is found, adds the P4 config to the environment for Rider.
+
+In Rider, set `Version Control` Config Settings to `Use environment variables`
+and Rider will use your `.p4config` settings to connect to P4.
 
 Supports the `-Debug` flag, add it to any command to gain more insight.
 
 ### Usage Examples
 
-Open the `.uproject` file in the current directory:
+Open the `.uproject` in the current directory:
 ```powershell
 Rider.ps1
 ```
 
+Open the `.uproject` file in the `ProjectDir`:
+```powershell
+Rider.ps1 ProjectDir
+```
+
+Open a specific `.uproject`:
+```powershell
+Rider.ps1 Path/to/My.uproject
+```
+
 Open the `.sln` file in the current directory:
+*(not recommended, Rider works best with uproject)*
 ```powershell
 Rider.ps1 -sln
 ```
@@ -274,10 +291,14 @@ Rider.ps1 -sln
 
 Compatibility: Windows only
 
-Start Visual Studio: Open the `.sln` associated with the current directory.
+Start Visual Studio: Open the `.sln` associated with the named project/file,
+by default: the project in the current directory, if any.
 
 Uses [`P4Config.ps1`](#p4configps1) to search for any relevant `.p4config`
 and if one is found, adds the P4 config to the environment for Rider.
+
+In Rider, set `Version Control` Config Settings to `Use environment variables`
+and Rider will use your `.p4config` settings to connect to P4.
 
 Supports the `-Debug` flag, add it to any command to gain more insight.
 
@@ -286,6 +307,16 @@ Supports the `-Debug` flag, add it to any command to gain more insight.
 Open the `.sln` file in the current directory:
 ```powershell
 VS.ps1
+```
+
+Open the `.sln` file in the `ProjectDir`:
+```powershell
+VS.ps1 ProjectDir
+```
+
+Open a specific `.sln`:
+```powershell
+VS.ps1 Path/to/My.sln
 ```
 
 Diff 2 files (for example can be used from `p4v` as the diff tool)
