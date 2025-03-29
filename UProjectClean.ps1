@@ -1,6 +1,6 @@
 #!/usr/bin/env pwsh
 #
-# UnrealProjectClean.ps1
+# UProjectClean.ps1
 #
 # See: https://github.com/XistGG/UnrealXistTools/
 #
