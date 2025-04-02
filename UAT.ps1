@@ -33,15 +33,27 @@ function Usage
 {
     $err = @"
 
-Usage: $ScriptName [-Path UProject] [-BuildConfig DebugGame] [-Target LyraGameSteam] -Cook
+Usage: $ScriptName [-Path UProject] [-Config DebugGame] [-Target LyraGameSteam] -Build
+       $ScriptName [-Path UProject] [-Config DebugGame] [-Target LyraGameSteam] -Cook
+       $ScriptName [-Path UProject] [-Config DebugGame] [-Target LyraGameSteam] -Stage
+       $ScriptName [-Path UProject] [-Config DebugGame] [-Target LyraGameSteam] -Run
        $ScriptName -Help
 
-    -Cook        Cook the project so you can run it outside the Editor.
-    -Help        Print this Usage info and exit.
+    -Build       Build the project. Required before you can Cook.
+    -Cook        Cook the project so you can run the Game independently of the Editor.
+                 By default this will cook incrementally for faster execution.
+    -FullCook    If you pass -FullCook then we won't do an incremental cook, and instead
+                 will fully cook from scratch (takes longer).
+    -Stage       Stage the project (after cooking) in preparation for packaging.
+    -Run         Run the Target.
+
+    -Config      The build configuration ("Development", "DebugGame", "Shipping", etc)
     -Target      The build target (prefix of your "*.Target.cs" file)
 
+    -Help        Print this Usage info and exit.
+
     [-Debug]     If present, prints additional debugging information.
-    [-UProject]  (Optional) UProject to your ".uproject" file/directory.
+    [-Path]      (Optional) Path to your ".uproject" file/directory.
                  Will be auto-computed based on your current dir by default.
 
 "@
