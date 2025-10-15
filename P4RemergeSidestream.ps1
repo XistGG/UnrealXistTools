@@ -203,7 +203,7 @@ for ($i=0; $i -lt $change.Files.Count; $i++)
     $sourcePath = Join-Path $SourceDir $relativePath  # may not exist
     $localPath = Join-Path $LocalDir $relativeLocalPath  # may not exist
 
-    if ($file.ChangeType -eq "delete")
+    if ($file.ChangeType -eq "delete" -or $file.ChangeType -eq "move/delete")
     {
         # Make sure the file is deleted from $localPath
         if (Test-Path -Path $localPath)
@@ -219,7 +219,7 @@ for ($i=0; $i -lt $change.Files.Count; $i++)
         continue
     }
 
-    if ($file.ChangeType -eq "branch" -or $file.ChangeType -eq "integrate")
+    if ($file.ChangeType -eq "branch" -or $file.ChangeType -eq "integrate" -or $file.ChangeType -eq "move/add")
     {
         if (Test-Path -Path $sourcePath)
         {
@@ -244,6 +244,11 @@ for ($i=0; $i -lt $change.Files.Count; $i++)
     }
 
     # If we're here, this is some ChangeType that we don't yet know what to do with.
+	Write-Error "Unknown change type, please submit a bug report."
+
+	Write-Host "Applicable file info:"
+    $file | Format-List
+
     throw "Unknown ChangeType '$($file.ChangeType)': Please submit a bug report"
 }
 
