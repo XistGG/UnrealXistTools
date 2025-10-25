@@ -22,7 +22,7 @@ param(
     [switch]$Help,
     [switch]$List,
     [switch]$NoDefault,
-    [switch]$Start
+    [string]$Config = "Development"
 )
 
 # Make sure the powershell version is good, or throw an exception
@@ -166,6 +166,12 @@ if ($UEngine)
         Write-Debug "Renaming Engine `"$($UEngine.Name)`" to `"$NewName`""
         # Try to change the name and reload the engine from the new name
         $UEngine =& UE_RenameCustomEngine -OldName $UEngine.Name -NewName $NewName
+    }
+    elseif ($Config -ne $null)
+    {
+    	# Caller asked explicitly for a Build Config
+		$Result =& UE_GetEngineConfig -BuildConfig $Config -EngineRoot $UEngine.Root  # from Modules/UE.psm1
+		$UEngine | Add-Member -MemberType NoteProperty -Name "Config" -Value $Result
     }
 }
 elseif ($Name)
