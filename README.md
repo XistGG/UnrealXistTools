@@ -395,11 +395,13 @@ if you want it to be named exactly the same, or choose some other name, etc.  It
 
 Compatibility: Linux + Mac + Windows
 
-- By default selects the engine used by the current or named project
+- By default, selects the engine used by the current or named project
 - `-List` lists all available custom engines
 - `-Name` selects from available custom engines
 - `-NewName` renames an engine to your choice of names
-- `-UProject` selects the engine associated with the given .uproject
+- `-UProject` selects the engine associated with the given `.uproject`
+- `-Config NAME` chooses the `NAME` config (either `Development` or `DebugGame`; maybe `Debug`)
+  settings for the engine result.
 - `-Debug` enables more detailed debug information
 
 See `-Help` for more Usage info.
@@ -431,6 +433,14 @@ with `-Debug` info
 *(errors out if there is no `.uproject` in the current directory)*:
 ```powershell
 UEngine.ps1 -Debug
+```
+
+Get the Engine Config for the Foo project:
+
+```powershell
+$e =& UEngine.ps1 -UProject path/to/Foo.uproject -Config DebugGame
+$e.Config  # dump the entire Config
+$e.Config.Binaries.Editor  # show the full path to the DebugGame Editor EXE
 ```
 
 --------------------------------------------------------------------------------
