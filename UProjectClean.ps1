@@ -139,8 +139,40 @@ try
         exit 151
     }
 
+    # Look up the UEngine associated with this .uproject, if possible
+    #
+	# Note that UE_GetEngineByAssociation doesn't know how to find Launcher-installed engines
+    # on Linux/Mac platforms.
+	#
+    # It can only find custom compiled engines, so it may throw an exception.
+
+	try
+	{
+	    $UEngine =& UE_GetEngineByAssociation -UProjectFile $UProjectFile.FullName -EngineAssociation $UProject.EngineAssociation
+
+		if ($UEngine -and $UEngine.Root)
+		{
+		    # If it didn't, regenerate project files.
+    		$UEngineConfig =& UE_GetEngineConfig -EngineRoot $UEngine.Root
+
+		    # Execute the engine's GenerateProjectFiles.sh
+		    if ($UEngineConfig -and (Test-Path -Path $UEngineConfig.GenerateProjectFiles))
+		    {
+	    		& $UEngineConfig.GenerateProjectFiles
+		    	exit $LASTEXITCODE
+		    }
+		}
+	}
+	catch
+	{
+		Write-Warning "Unable to find GenerateProjectFiles on this system"
+	}
+
     if ($IsWindows)
     {
+    	# We will try to fall back to the default launcher UVS if possible
+		Write-Host "Trying to generate project files with Launcher-installed UnrealVersionSelector (if any)..."
+
         # UnrealVersionSelector.ps1 only works on Windows, so we'll use it.
         # The advantage here is this works with Launcher-installed engines as well as custom engines.
         . $PSScriptRoot\UnrealVersionSelector.ps1 -ProjectFiles $UProjectFile.FullName
@@ -150,20 +182,7 @@ try
     {
         # Epic's UnrealVersionSelector does not work on Linux/Mac.
 
-        # On Linux/Mac, look up the UEngine associated with this .uproject,
-        # then explicitly run GenerateProjectFiles.sh for the appropriate Engine
-        $UEngine =& UE_GetEngineByAssociation -UProjectFile $UProjectFile.FullName -EngineAssociation $UProject.EngineAssociation
-
-        # Note that UE_GetEngineByAssociation doesn't know how to find Launcher-installed engines
-        # on Linux/Mac platforms.
-        #
-        # It can only find custom compiled engines, so it may have thrown an exception.
-        # If it didn't, regenerate project files.
-        $UEngineConfig =& UE_GetEngineConfig -EngineRoot $UEngine.Root
-
-        # Execute the engine's GenerateProjectFiles.sh
-        & $UEngineConfig.GenerateProjectFiles
-        exit $LASTEXITCODE
+		throw "Unable to Generate Project Files"
     }
 }
 finally
