@@ -2,7 +2,7 @@
 #
 # UEdit.ps1
 #
-# Open a project in Unreal Editor
+# Open a UProject in Unreal Editor Development mode
 #
 
 [CmdletBinding()]
@@ -13,6 +13,9 @@ param(
 # Make sure the powershell version is good, or throw an exception
 & $PSScriptRoot/PSVersionCheck.ps1
 
+# Import the UE helper module
+Import-Module -Name $PSScriptRoot/Modules/UE.psm1
+
 ################################################################################
 ##  Main
 ################################################################################
@@ -21,14 +24,38 @@ param(
 
 Write-Debug "Compute UProjectFile Path=[$Path]"
 
-$UProjectFile =& $PSScriptRoot/UProjectFile.ps1 -Path:$Path
+# Determine which UProjectFile we will Edit
+$UProject =& $PSScriptRoot/UProject.ps1 -Path:$Path
 
-if (!$UProjectFile -or !$UProjectFile.Exists)
+if (!$UProject)
 {
     throw "Path is not a UProject: $Path"
+}
+
+$UProjectFile = Get-Item -Path $UProject._UProjectFile
+
+try
+{
+    $UEngine =& UE_GetEngineByAssociation -UProjectFile $UProjectFile.FullName -EngineAssociation $UProject.EngineAssociation
+
+	if ($UEngine -and $UEngine.Root)
+	{
+	    # If it didn't, regenerate project files.
+    	$UEngineConfig =& UE_GetEngineConfig -EngineRoot $UEngine.Root
+
+		# Open the UProject in UEditor
+		Write-Debug "EXEC: $($UEngineConfig.Binaries.Editor) $($UProjectFile.FullName)"
+		& $UEngineConfig.Binaries.Editor $UProjectFile.FullName
+		exit $LASTEXITCODE
+	}
+}
+catch
+{
+	Write-Warning "Unable to find associated Engine, will try UnrealVersionSelector as a backup"
 }
 
 
 # Start UVS -Editor on the selected UProjectFile
 
 & $PSScriptRoot/UnrealVersionSelector.ps1 -Editor $UProjectFile.FullName
+exit $LASTEXITCODE
