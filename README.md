@@ -159,7 +159,11 @@ Supports the `-Debug` flag, add it to any command to gain more insight.
 
 Note: On Linux/Mac, the Generate Project Files portion only works if your project uses a custom engine.
 For projects that use a Launcher-installed engine on those platforms, there is no way to know where you
-installed those engines. On Windows this isn't an issue.
+installed those engines.
+
+On Windows, if you use a custom engine build and have a `GenerateProjectFiles.bat` script in the
+expected location for your custom engine, that script will be run. Alternatively, if you use a launcher
+installed Engine, `UProjectClean.ps1` will fall back to using the launcher's `UnrealVersionSelector.exe`
 
 ### Usage Examples
 
