@@ -1,6 +1,6 @@
 #!/usr/bin/env pwsh
 #
-# P4Config2ENV.ps1
+# P4Config.ps1
 #
 # See: https://github.com/XistGG/UnrealXistTools/
 #
@@ -33,42 +33,58 @@ $P4ConfigFilename = if ($env:P4CONFIG) {$env:P4CONFIG} else {".p4config"}
 ##  Functions
 ################################################################################
 
-function FindP4ConfigFile()
+function FindItemInPathHierarchy()
 {
     param(
-        [string]$Directory
+        [string]$Path,
+        [string]$Name,
+        [switch]$File,
+        [switch]$Directory
     )
 
-    # If $Directory is not a valid directory, there is no .p4config here
-    $dir = Get-Item -Path $Directory 2> $null
+    # If $Path is not a valid directory, there is no item with $Name in it
+    $dir = Get-Item -Path $Path 2> $null
     if (!$dir -or !$dir.Exists -or !$dir.PSIsContainer)
     {
         return $null
     }
 
-    # Try to find .p4config in $Directory
-    Write-Debug "Searching for $P4ConfigFilename in: $($dir.FullName)"
-    $filename = Join-Path $dir.FullName $P4ConfigFilename
-    $p4config = Get-ChildItem -Path $filename -File -Force 2> $null
+    # Try to find $Name in $Path
+    Write-Debug "Searching for $Name in: $($dir.FullName)"
+    $tempName = Join-Path $dir.FullName $Name
+    $item = Get-Item -Path $tempName -Force 2> $null
 
-    # If we found a .p4config in this $Directory, return it
-    if ($p4config -and $p4config.Exists)
+    # If we found $Name in this $Path, return it
+    if ($item -and $item.Exists)
     {
-        Write-Debug "Found ${P4ConfigFilename}: $($p4config.FullName)"
-        return $p4config
+        Write-Debug "Found ${Name}: $($item.FullName)"
+
+		if ($File -and $item.PSIsContainer)
+		{
+			Write-Warning "${Name} exists but is not a file"
+			return $null
+		}
+
+		if ($Directory -and -not $item.PSIsContainer)
+		{
+			Write-Warning "${Name} exists but is not a directory"
+			return $null
+		}
+
+		# $item exists and passes any type requirements
+		return $item
     }
 
     # No .p4config in this directory.
     # Recursively search parent directories until we get to the root.
     if ($dir.Parent -and $dir.Parent.Exists)
     {
-        return FindP4ConfigFile -Directory:$dir.Parent.FullName
+        return FindItemInPathHierarchy -Path $dir.Parent.FullName -Name $Name -File:$File -Directory:$Directory
     }
 
     # There is no parent directory, we're already at the root
     return $null
 }
-
 
 function GetP4Config()
 {
@@ -159,7 +175,7 @@ if (!(Test-Path -Path:$Path -PathType Container))
 
 # Find the .p4config in the given path
 $p4config = $null
-$P4ConfigItem = FindP4ConfigFile -Directory:$Path
+$P4ConfigItem = FindItemInPathHierarchy -Path $Path -Name $P4ConfigFilename -File
 if ($P4ConfigItem -and $P4ConfigItem.Exists)
 {
     $p4config = GetP4Config -P4ConfigItem:$P4ConfigItem
@@ -167,9 +183,22 @@ if ($P4ConfigItem -and $P4ConfigItem.Exists)
 
 if (!$p4config)
 {
+	# If we're in a Git repo, of course there is no .p4config, don't complain about it.
+	$gitRepo = FindItemInPathHierarchy -Path $Path -Name ".git" -Directory
+	if ($gitRepo)
+	{
+		# Make it known in debug what's going on here
+		$gitRepoRoot = $gitRepo.Parent.FullName
+	    Write-Debug "${ScriptName}: No $P4ConfigFilename found in Git repo [$gitRepoRoot]"
+		return $null
+	}
+
+ 	# Since we aren't in a Git repo, we assume you probably want to store this in P4.
+	# Thus we'll warn here that your .p4config is missing.
+
     # Write to stdout so the dev knows why they don't have any p4config
     # in the $ENV; it's because there is no relevant file anywhere!
-    Write-Host "${ScriptName}: No relevant $P4ConfigFilename found. To create one, run `"P4Info.ps1 -Config > $P4ConfigFilename`""
+    Write-Warning "${ScriptName}: No relevant $P4ConfigFilename found. To create one, run `"P4Info.ps1 -Config > $P4ConfigFilename`""
     return $null
 }
 
