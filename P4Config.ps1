@@ -61,13 +61,13 @@ function FindItemInPathHierarchy()
 
 		if ($File -and $item.PSIsContainer)
 		{
-			Write-Warning "${Name} exists but is not a file"
+			Write-Warning "$($item.FullName) exists but is not a file"
 			return $null
 		}
 
 		if ($Directory -and -not $item.PSIsContainer)
 		{
-			Write-Warning "${Name} exists but is not a directory"
+			Write-Warning "$($item.FullName) exists but is not a directory"
 			return $null
 		}
 
