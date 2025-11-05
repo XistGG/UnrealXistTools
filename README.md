@@ -73,6 +73,8 @@ I encourage you to research it further on your own.
 
 # Project Tools
 
+- [CreateCleanLyraUProject.ps1](#createcleanlyrauprojectps1)
+  - Setup Default Lyra Project on Git
 - [UProject.ps1](#uprojectps1)
   - Get Project Settings
 - [UProjectFile.ps1](#uprojectfileps1)
@@ -140,6 +142,44 @@ Build, cook, stage and run the `LyraGameEOS` target from `Lyra.uproject` in the 
 UAT.ps1 Lyra.uproject -Config Development -Target LyraGameEOS -Build -Cook -Stage -Run
 ```
 
+
+# CreateCleanLyraUProject.ps1
+
+[view source: UProjectClean.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/CreateCleanLyraUProject.ps1)   
+[more information: How to Create a Lyra-based Project in Git](https://x157.github.io/UE5/LyraStarterGame/Tutorials/How-to-Create-a-Lyra-Repo.html)
+
+- Clones Lyra From Epic Source Github
+- Copies Lyra Content From Epic Launcher
+- Setups default branches
+  - `lyra-main`
+  - `lyra-api`
+  - `lyra-game`
+
+### Usage Examples
+#### Parameters:
+- `-EngineRepositoryUrl` (optional, default: "https://github.com/EpicGames/UnrealEngine") 
+  - URL of the Unreal Engine repository.
+- `-EngineBranch` (optional, default: "5.2") 
+  - Branch of the Unreal Engine to use.
+- `-WorkspaceDir` (required): 
+  - Directory where your project will be created.
+- `-UE5Root` (required): 
+  - Directory where Unreal Engine is located.
+- `-LyraContentDir` (required): 
+  - Directory containing the Lyra content.
+- `-LyraMainBranch` (optional, default: "lyra-main"): 
+  - Name of the main Lyra branch.
+- `-LyraApiBranch` (optional, default: "lyra-api"): 
+  - Name of the Lyra API branch.
+- `-GameBranch` (optional, default: "lyra-game"): 
+  - Name of the game branch.
+- `-GameName` (optional, default: "Lyra"): 
+  - Name of your game project.
+
+Generate a default clean lyra project on UE5.2
+```powershell
+CreateCleanLyraUProject.ps1 -GameName "MyGame" -WorkspaceDir "\\Projects\MyGame" -UE5Root "\\UnrealEngineSource" -LyraContentDir "\\LyraContent"
+```
 
 # UProjectClean.ps1
 
