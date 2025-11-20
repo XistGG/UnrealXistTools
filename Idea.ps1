@@ -21,15 +21,16 @@ param(
 # Set $env:IdeaCommand to override the default value
 $IdeaCommand = $env:IdeaCommand ? $env:IdeaCommand : "idea"
 
-$PathItem = Get-Location  # Default: current directory
+$PathItem = Get-Item -Path $(Get-Location)  # Default: current directory
 
 if ($Path -ne $null -and $Path -ne "")
 {
     $PathItem = Get-Item -Path $Path
-    if (-not $PathItem)
-    {
-        throw "Invalid Path: [$Path]"
-    }
+}
+
+if (-not $PathItem)
+{
+    throw "Invalid Path: [$Path]"
 }
 
 ################################################################################
