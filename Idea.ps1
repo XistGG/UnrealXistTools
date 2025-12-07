@@ -4,7 +4,7 @@
 #
 # Open IntelliJ Idea for the given project root directory
 #
-# For this to work, set your JetBrains Toolbox to use the script name "idea"
+# For this to work, set your JetBrains Toolbox to use the script name "Idea1"
 # for the version of Idea you want to use by default.
 #
 # Conversely, override $env:IdeaCommand to set an alternate default.
@@ -19,7 +19,7 @@ param(
 & $PSScriptRoot/PSVersionCheck.ps1
 
 # Set $env:IdeaCommand to override the default value
-$IdeaCommand = $env:IdeaCommand ? $env:IdeaCommand : "idea"
+$IdeaCommand = $env:IdeaCommand ? $env:IdeaCommand : "Idea1"
 
 $PathItem = Get-Item -Path $(Get-Location)  # Default: current directory
 
