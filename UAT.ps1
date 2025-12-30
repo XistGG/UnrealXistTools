@@ -7,6 +7,7 @@
 param(
     [string]$Config = "Development",
     [string]$Target = "LyraGameEOS",
+    [string]$Module = $null,
     [switch]$Cook,
     [switch]$Build,
     [switch]$Run,
@@ -49,6 +50,7 @@ Usage: $ScriptName [-Path UProject] [-Config DebugGame] [-Target LyraGameSteam] 
 
     -Config      The build configuration ("Development", "DebugGame", "Shipping", etc)
     -Target      The build target (prefix of your "*.Target.cs" file)
+    -Module      If specified, limit actions to the given Module.
 
     -Help        Print this Usage info and exit.
 
@@ -131,6 +133,8 @@ if ($Cook -or $Run -or $Stage)
         "-NoP4"
         )
 
+    if ($Module)       { $args += "-Module=$Module" }
+
     if ($Build)        { $args += "-Build" }
     if ($Server)       { $args += "-Server" }
 
@@ -152,6 +156,8 @@ elseif ($Build)
         $EngineConfig.Platform,
         $Config
         )
+
+    if ($Module)       { $args += "-Module=$Module" }
 }
 else
 {
