@@ -14,6 +14,9 @@ param(
     [switch]$Server,
     [switch]$Stage,
     [switch]$FullCook,
+    [switch]$BuildMachine,
+    [switch]$CrashReporter,
+    [switch]$Distribution,
     [switch]$Help,
     [Parameter(Position = 0)]$Path
 )
@@ -113,7 +116,7 @@ if (!(Test-Path -Path $EngineDir -PathType Container))
 
 $EngineConfig =& UE_GetEngineConfig -BuildConfig:$Config -EngineDir:$EngineDir
 
-$args = @(
+$uargs = @(
     "-ScriptsForProject=$UProjectFile"
     )
 
@@ -123,7 +126,7 @@ $Cook = $Cook -or $FullCook;  # -FullCook implies -Cook
 
 if ($Cook -or $Run -or $Stage)
 {
-    $args = @(
+    $uargs = @(
         "BuildCookRun",
         "-Target=$Target",
         "-Platform=$($EngineConfig.Platform)",
@@ -133,40 +136,42 @@ if ($Cook -or $Run -or $Stage)
         "-NoP4"
         )
 
-    if ($Module)       { $args += "-Module=$Module" }
-
-    if ($Build)        { $args += "-Build" }
-    if ($Server)       { $args += "-Server" }
+    if ($Build)        { $uargs += "-Build" }
 
     # By default, -Cook is iterative. Use -FullCook to disable iterative cooking.
-    if ($Cook)         { $args += "-Cook";    if (!$FullCook) { $args += "-Iterative" } }
-    if ($Run)          { $args += "-Run" }
+    if ($Cook)         { $uargs += "-Cook";   if (!$FullCook) { $uargs += "-Iterative" } }
+    if ($Run)          { $uargs += "-Run" }
 
     # -Stage requires either -Cook or -SkipCook
-    if ($Stage)        { $args += "-Stage";   if (!$Cook) { $args += "-SkipCook" } }
+    if ($Stage)        { $uargs += "-Stage";  if (!$Cook) { $uargs += "-SkipCook" } }
 }
 elseif ($Build)
 {
     # If all we want to do is -Build, then run UBT instead of UAT
     $UAT = $EngineConfig.UBT
 
-    # Override all previously set $args since we're running UBT instead of UAT
-    $args = @(
+    # Override all previously set $uargs since we're running UBT instead of UAT
+    $uargs = @(
         $Target,
         $EngineConfig.Platform,
         $Config
         )
-
-    if ($Module)       { $args += "-Module=$Module" }
 }
 else
 {
     & Usage
 }
 
-Write-Debug "${ScriptName}: EXEC: $UAT $($args -join ' ')"
+# Add additional optional pass-thru flags
+if ($BuildMachine)   { $uargs += "-BuildMachine" }
+if ($CrashReporter)  { $uargs += "-CrashReporter" }
+if ($Distribution)   { $uargs += "-Distribution" }
+if ($Module)         { $uargs += "-Module=$Module" }
+if ($Server)         { $uargs += "-Server" }
 
-& $UAT @args
+# Run UAT or UBT with args
+Write-Debug "${ScriptName}: EXEC: $UAT $uargs"
+& $UAT @uargs
 
 # Explicitly exit with the same exit code as UAT/UBT exited with
 exit $LASTEXITCODE
