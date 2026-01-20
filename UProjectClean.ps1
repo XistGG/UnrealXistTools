@@ -14,6 +14,10 @@
 #   - Remove *.sln files from the project root
 #   - Generate Project Files
 #
+# The optional -VSCode switch will cause VSCode project files to be generated
+# instead of the default Visual Studio project files.
+# @see https://dev.epicgames.com/documentation/en-us/unreal-engine/setting-up-visual-studio-code-for-unreal-engine
+#
 
 [CmdletBinding()]
 param(
@@ -22,6 +26,7 @@ param(
     [switch]$DDC,
     [switch]$Nuke,
     [switch]$Saved,
+    [switch]$VSCode,
     [Parameter()]$Path
 )
 
@@ -47,6 +52,12 @@ if ($Nuke)
     $DDC = $true;
     $Idea = $true;
     $Saved = $true;
+}
+
+$extraGenerateProjectFilesArgs = @()
+if ($VSCode)
+{
+    $extraGenerateProjectFilesArgs += @("-vscode")
 }
 
 
@@ -158,7 +169,8 @@ try
 		    # Execute the engine's GenerateProjectFiles.sh
 		    if ($UEngineConfig -and (Test-Path -Path $UEngineConfig.GenerateProjectFiles))
 		    {
-	    		& $UEngineConfig.GenerateProjectFiles
+                Write-Debug "EXEC: ${$UEngineConfig.GenerateProjectFiles} $extraGenerateProjectFilesArgs"
+	    		& $UEngineConfig.GenerateProjectFiles @extraGenerateProjectFilesArgs
 		    	exit $LASTEXITCODE
 		    }
 		}
