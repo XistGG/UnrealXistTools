@@ -4,26 +4,29 @@ This document outlines the future work and improvements planned for the `UnrealX
 
 ## High Priority
 
--   [ ] **Extensive Tests**: Create comprehensive tests for PowerShell modules, specifically:
-    -   `Modules/INI.psm1`
-    -   `Modules/UE.psm1`
-    -   `Modules/P4.psm1`
-    -   Existing tests are sparse (only `Tests/Test_P4_ParseFileType.ps1`).
+-   [ ] **Extensive Tests**:
+    -   Analyze `.ps1` scripts for testability and coverage requirements.
+    -   Implement tests for `.ps1` scripts.
+    -   Create comprehensive tests for PowerShell modules, specifically:
+        -   `Modules/INI.psm1`
+        -   `Modules/UE.psm1`
+        -   `Modules/P4.psm1`
+        -   Existing tests are sparse (only `Tests/Test_P4_ParseFileType.ps1`).
 -   [ ] **Improve Documentation**:
     -   Expand `README.md` with more examples.
-    -   Add inline help to all `.ps1` and `.psm1` files.
+    -   Add inline help (Get-Help) to all `.ps1` and `.psm1` files.
     -   Generate API documentation if possible.
     -   **JetBrains Toolbox Setup**: Document script name requirements (e.g. usage of `Rider1` vs `rider`) to avoid conflicts with `Rider.ps1` (and similarly for PyCharm/Idea).
 
 ## Medium Priority
 
 -   [ ] **CI/CD Pipeline**:
-    -   Set up GitHub Actions to run tests on push/PR.
+    -   Set up GitHub Actions to run tests on push/PR for automated testing.
     -   Validate PowerShell script syntax (PSScriptAnalyzer).
 -   [ ] **Refactoring**:
     -   Ensure consistent error handling across all scripts.
     -   Standardize parameter naming conventions.
-    -   Move common logic from root scripts into `Modules/`.
+    -   Move common logic from root scripts into `Modules/` for better testability.
 
 ## Low Priority (Ideas)
 
