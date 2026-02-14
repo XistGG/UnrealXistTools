@@ -29,7 +29,7 @@
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory=$true)]
+    [Parameter(Mandatory = $true, Position = 0)]
     [string] $CL
 )
 
@@ -45,24 +45,20 @@ $IntegrateFiles = New-Object System.Collections.ArrayList
 $OtherFiles = New-Object System.Collections.ArrayList
 
 
-function AddToOtherFiles
-{
+function AddToOtherFiles {
     param(
         [string] $DepotFile
     )
 
     $script:OtherFiles.Add($DepotFile) > $null
 
-    if ($script:OtherFiles.Count -ge $script:BatchSize)
-    {
+    if ($script:OtherFiles.Count -ge $script:BatchSize) {
         &FlushOtherFiles
     }
 }
 
-function FlushOtherFiles
-{
-    if ($script:OtherFiles.Count -eq 0)
-    {
+function FlushOtherFiles {
+    if ($script:OtherFiles.Count -eq 0) {
         return
     }
 
@@ -72,25 +68,20 @@ function FlushOtherFiles
     $script:OtherFiles.Clear()
 }
 
-function FlushIntegrateFiles
-{
-    if ($script:IntegrateFiles.Count -eq 0)
-    {
+function FlushIntegrateFiles {
+    if ($script:IntegrateFiles.Count -eq 0) {
         return
     }
 
-    $fstatResult =& P4_FStat -Paths $script:IntegrateFiles
+    $fstatResult = & P4_FStat -Paths $script:IntegrateFiles
     $resolvePaths = New-Object System.Collections.ArrayList
 
-    foreach ($fstat in $fstatResult)
-    {
-        if ($fstat.unresolved -and -not $fstat.resolved)
-        {
+    foreach ($fstat in $fstatResult) {
+        if ($fstat.unresolved -and -not $fstat.resolved) {
             # This file is marked as needing to be resolved
             $resolvePaths.Add($fstat.depotFile) > $null
         }
-        else
-        {
+        else {
             # This does not require manual processing, it has already been resolved
             # or does not need to be resolved.  Move to the default CL
             &AddToOtherFiles -DepotFile $fstat.depotFile
@@ -105,18 +96,15 @@ function FlushIntegrateFiles
     # Any files that were marked as resolve, try to do a safe (non-merge) auto-resolve
     # and if that succeeds, then move this file to the other files list
 
-    if ($resolvePaths.Count -gt 0)
-    {
+    if ($resolvePaths.Count -gt 0) {
         Write-Debug "EXEC: p4 resolve -c $CL -as $($resolvePaths -join ' ')"
         p4 resolve -c $CL -as @resolvePaths
 
         # Check the new fstat for these files to see if they were successfully resolved or not
-        $fstatResult =& P4_FStat -Paths $resolvePaths
+        $fstatResult = & P4_FStat -Paths $resolvePaths
 
-        foreach ($fstat in $fstatResult)
-        {
-            if ($fstat.resolved) # if it's now successfully resolved
-            {
+        foreach ($fstat in $fstatResult) {
+            if ($fstat.resolved) { # if it's now successfully resolved
                 # This does not require manual processing, move it to the default CL
                 &AddToOtherFiles -DepotFile $fstat.depotFile
             }
@@ -125,8 +113,7 @@ function FlushIntegrateFiles
     }
 }
 
-function ProcessChange
-{
+function ProcessChange {
     param(
         [string] $DepotFile,
         [string] $ChangeType
@@ -134,16 +121,14 @@ function ProcessChange
 
     $script:IntegrateFiles.Add($DepotFile) > $null
 
-    if ($script:IntegrateFiles.Count -ge $script:BatchSize)
-    {
+    if ($script:IntegrateFiles.Count -ge $script:BatchSize) {
         &FlushIntegrateFiles
     }
 }
 
 ##########
 
-try
-{
+try {
     # Create a temp file to use for this operation
     $tempFile = New-TemporaryFile
 
@@ -155,14 +140,12 @@ try
     # Read the file and process the lines individually
     $tempReader = [System.IO.StreamReader]::new($tempFile.FullName)
 
-    while (($line = $tempReader.ReadLine()) -ne $null)
-    {
+    while (($line = $tempReader.ReadLine()) -ne $null) {
         #Write-Debug "LINE: $line"
 
         # Ignore header lines that don't start with "... ",
         # we're only interested in the lines that identify files in this changelist
-        if ($line -match "^\.\.\.\s+(//[^#]+)#(\d+)\s+(.+)")
-        {
+        if ($line -match "^\.\.\.\s+(//[^#]+)#(\d+)\s+(.+)") {
             $depotFile = $matches[1]  # note: this path is p4-encoded
             $revision = $matches[2]
             $changeType = $matches[3]
@@ -174,18 +157,15 @@ try
     &FlushIntegrateFiles
     &FlushOtherFiles
 }
-finally
-{
+finally {
     # Close stream reader if it's open
-    if ($tempReader)
-    {
+    if ($tempReader) {
         $tempReader.Dispose()
         $tempReader = $null
     }
 
     # Clean up the temp file if we created one
-    if (Test-Path -Path $tempFile.FullName)
-    {
+    if (Test-Path -Path $tempFile.FullName) {
         Remove-Item -Path $tempFile.FullName
     }
 }
