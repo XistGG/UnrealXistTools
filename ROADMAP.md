@@ -13,6 +13,7 @@ This document outlines the future work and improvements planned for the `UnrealX
     -   Expand `README.md` with more examples.
     -   Add inline help to all `.ps1` and `.psm1` files.
     -   Generate API documentation if possible.
+    -   **JetBrains Toolbox Setup**: Document script name requirements (e.g. usage of `Rider1` vs `rider`) to avoid conflicts with `Rider.ps1` (and similarly for PyCharm/Idea).
 
 ## Medium Priority
 
