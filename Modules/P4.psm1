@@ -2,104 +2,93 @@
 # P4.psm1
 #
 
-class P4_Exception : System.Exception
-{
+class P4_Exception : System.Exception {
     P4_Exception([string]$command, [int]$code)
-      : base("P4 command failed with code ${code}: ${command}")
+    : base("P4 command failed with code ${code}: ${command}")
     {}
 }
 
-class P4_Parse_Exception : System.Exception
-{
+class P4_Parse_Exception : System.Exception {
     P4_Parse_Exception([string]$message)
-      : base($message)
+    : base($message)
     {}
 }
 
-function P4_DecodePath
-{
+function P4_DecodePath {
     param(
-        [Parameter(Mandatory=$true, Position=0)]
+        [Parameter(Mandatory = $true, Position = 0)]
         [string]$Path
     )
 
     # MUST DECODE '%' CHARACTER AFTER ALL OTHERS !!
     # @see https://www.perforce.com/manuals/cmdref/Content/CmdRef/filespecs.html
-    $Path -ireplace '%23','#' `
-          -ireplace '%2A','*' `
-          -ireplace '%3A',':' `
-          -ireplace '%40','@' `
-          -ireplace '%25','%'
+    $Path -ireplace '%23', '#' `
+        -ireplace '%2A', '*' `
+        -ireplace '%3A', ':' `
+        -ireplace '%40', '@' `
+        -ireplace '%25', '%'
 }
 
-function P4_EncodePath
-{
+function P4_EncodePath {
     param(
-        [Parameter(Mandatory=$true, Position=0)]
+        [Parameter(Mandatory = $true, Position = 0)]
         [string]$Path
     )
 
     # MUST ENCODE '%' CHARACTER BEFORE ANY OTHER !!
     # the '*' line must be regex-escaped because asterisk is a special regex character
     # @see https://www.perforce.com/manuals/cmdref/Content/CmdRef/filespecs.html
-    $Path -ireplace '%','%25' `
-          -ireplace '#','%23' `
-          -ireplace '\*','%2A' `
-          -ireplace ':','%3A' `
-          -ireplace '@','%40'
+    $Path -ireplace '%', '%25' `
+        -ireplace '#', '%23' `
+        -ireplace '\*', '%2A' `
+        -ireplace ':', '%3A' `
+        -ireplace '@', '%40'
 }
 
-function P4_ParseFileType
-{
+function P4_ParseFileType {
     param(
-        [Parameter(Mandatory=$true, Position=0)]
+        [Parameter(Mandatory = $true, Position = 0)]
         [string]$TypeString
     )
 
     $result = [PSCustomObject]@{
-        RawType = $TypeString
-        BaseType = $null
+        RawType   = $TypeString
+        BaseType  = $null
         ModString = $null
         Modifiers = [PSCustomObject]@{}
     }
 
-    if ($TypeString -match "([^\+]+)(\+(.+))?")
-    {
+    if ($TypeString -match "([^\+]+)(\+(.+))?") {
         $result.BaseType = $matches[1]
         $result.ModString = $matches[3]  # yes 3, not 2
 
         # Parse known modifiers
         # @see https://help.perforce.com/helix-core/server-apps/cmdref/current/Content/CmdRef/file.types.synopsis.modifiers.html
 
-        if ($result.ModString -ne $null)
-        {
+        if ($result.ModString -ne $null) {
             $tmp = $result.ModString
 
             # Parse all modifiers that take no arguments
-            while ($tmp -match "(.*)([CDFlmwXx])(.*)")
-            {
+            while ($tmp -match "(.*)([CDFlmwXx])(.*)") {
                 $result.Modifiers | Add-Member -Name $matches[2] -Type NoteProperty -Value $true
                 $tmp = $matches[1] + $matches[3]
             }
 
             # "k" and "ko" are mutually exclusive
-            if ($tmp -match "(.*)(ko?)(.*)")
-            {
+            if ($tmp -match "(.*)(ko?)(.*)") {
                 $result.Modifiers | Add-Member -Name $matches[2] -Type NoteProperty -Value $true
                 $tmp = $matches[1] + $matches[3]
             }
 
             # "S" takes an optional integer argument that defaults to 1
-            if ($tmp -match "(.*)S(\d*)(.*)")
-            {
+            if ($tmp -match "(.*)S(\d*)(.*)") {
                 $tmpName = 'S'
                 $tmpValue = [Math]::Max(1, [int] $matches[2])
                 $result.Modifiers | Add-Member -Name $tmpName -Type NoteProperty -Value $tmpValue
                 $tmp = $matches[1] + $matches[3]
             }
 
-            if ($tmp -ne "")
-            {
+            if ($tmp -ne "") {
                 Write-Warning "P4.psm1: P4_ParseFileType: Invalid file type modifier `"$TypeString`" (unrecognized modifier: `"$tmp`")"
             }
         }
@@ -108,31 +97,28 @@ function P4_ParseFileType
     return $result
 }
 
-function P4_ParseChangeLine
-{
+function P4_ParseChangeLine {
     param(
-        [Parameter(Mandatory=$true, Position=0)]
+        [Parameter(Mandatory = $true, Position = 0)]
         [string]$Line,
         [switch]$ParseFileType
     )
 
     $result = [PSCustomObject]@{
-        IsFile = $false
-        P4Path = $null
+        IsFile   = $false
+        P4Path   = $null
         Revision = $null
-        Info = $null
+        Info     = $null
     }
 
-    if ($Line -match "^(//[^#]+)#(\d+) \- (.*)")
-    {
+    if ($Line -match "^(//[^#]+)#(\d+) \- (.*)") {
         $result.IsFile = $true
-        $result.P4Path =& P4_DecodePath $matches[1]
+        $result.P4Path = & P4_DecodePath $matches[1]
         $result.Revision = $matches[2]
         $result.Info = $matches[3].TrimEnd(" ", "`r")  # Strip any spaces or CR characters from the end
 
-        if ($ParseFileType -and $result.Info -match ".*\((.+)\)$")
-        {
-            $typeResult =& P4_ParseFileType -TypeString $matches[1]
+        if ($ParseFileType -and $result.Info -match ".*\((.+)\)$") {
+            $typeResult = & P4_ParseFileType -TypeString $matches[1]
             $result | Add-Member -Name "FileType" -Type NoteProperty -Value $typeResult
         }
     }
@@ -140,37 +126,48 @@ function P4_ParseChangeLine
     return $result
 }
 
-function P4_FilterIgnoredPaths
-{
+function Invoke-P4 {
     param(
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true, Position = 0)]
+        [string[]]$Arguments
+    )
+
+    $commandStr = "p4 " + ($Arguments -join " ")
+    Write-Debug "EXEC: $commandStr"
+
+    # Use invocation operator & to call p4 with the arguments array
+    # This avoids issues with splatting specialized parameters
+    $output = & p4 @Arguments
+
+    if ($LASTEXITCODE -ne 0) {
+        throw [P4_Exception]::new($commandStr, $LASTEXITCODE)
+    }
+
+    return $output
+}
+
+function P4_FilterIgnoredPaths {
+    param(
+        [Parameter(Mandatory = $true)]
         [System.Collections.ArrayList]$Paths
     )
 
     $result = [PSCustomObject]@{
-        ValidPaths = New-Object System.Collections.ArrayList
+        ValidPaths   = New-Object System.Collections.ArrayList
         IgnoredPaths = New-Object System.Collections.ArrayList
     }
 
     try {
-        $command = "p4 ignores -i $($Paths -join ' ')"
-        Write-Debug "EXEC: $command"
-
-        $output = p4 ignores -i @Paths
-
-        if ($LASTEXITCODE -ne 0)
-        {
-            throw [P4_Exception]::new($command, $LASTEXITCODE)
-        }
+        # Using Invoke-P4 wrapper
+        # Note: We pass arguments as a flat list/array for Invoke-P4
+        $output = Invoke-P4 "ignores", "-i", $Paths
 
         $stdoutLines = $output -split "`r`n|`n|`r"
         $ignoredFiles = New-Object System.Collections.ArrayList
 
         # The file will only appear in the stdout if it should be ignored
-        foreach ($line in $stdoutLines)
-        {
-            if ($line -imatch '^(.+\S)\s+ignored\s*$')
-            {
+        foreach ($line in $stdoutLines) {
+            if ($line -imatch '^(.+\S)\s+ignored\s*$') {
                 $p4name = $matches[1]
                 $realPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($p4name)
                 $ignoredFiles.Add($realPath) > $null
@@ -180,8 +177,7 @@ function P4_FilterIgnoredPaths
             }
         }
 
-        if ($ignoredFiles.Count -eq 0)
-        {
+        if ($ignoredFiles.Count -eq 0) {
             # None of the paths should be ignored
             $result.ValidPaths = $Paths
             return $result
@@ -191,26 +187,21 @@ function P4_FilterIgnoredPaths
         $ValidPaths = New-Object System.Collections.ArrayList
         $IgnoredPaths = New-Object System.Collections.ArrayList
 
-        foreach ($path in $Paths)
-        {
+        foreach ($path in $Paths) {
             $fullPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($path)
             $isValid = $true
 
-            foreach ($invalidFile in $ignoredFiles)
-            {
-                if ($fullPath -eq $invalidFile)
-                {
+            foreach ($invalidFile in $ignoredFiles) {
+                if ($fullPath -eq $invalidFile) {
                     $isValid = $false
                     break
                 }
             }
 
-            if ($isValid)
-            {
+            if ($isValid) {
                 $result.ValidPaths.Add($path) > $null
             }
-            else
-            {
+            else {
                 $result.IgnoredPaths.Add($path) > $null
             }
         }
@@ -218,35 +209,28 @@ function P4_FilterIgnoredPaths
         return $result
     }
     catch {
+        # Propagate exceptions
         throw
     }
 }
 
-function P4_GetPendingChangeLists
-{
+function P4_GetPendingChangeLists {
     param(
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [string]$Workspace
     )
 
-    $command = "p4 changes -c $Workspace -s pending -r"
-    $output = p4 changes -c $Workspace -s pending -r
-
-    if ($LASTEXITCODE -ne 0)
-    {
-        throw [P4_Exception]::new($command, $LASTEXITCODE)
-    }
+    # Using Invoke-P4 wrapper
+    $output = Invoke-P4 "changes", "-c", $Workspace, "-s", "pending", "-r"
 
     $lines = $output -split "`r`n|`n|`r"
     $changes = New-Object System.Collections.ArrayList
 
-    foreach ($line in $lines)
-    {
+    foreach ($line in $lines) {
         # Line format is expected to be:
         # Change 123 on 2024/12/31 by user@workspace *pending* 'Change description (truncated)'
 
-        if ($line -imatch '^Change\s+(\d+)\s+on\s+')
-        {
+        if ($line -imatch '^Change\s+(\d+)\s+on\s+') {
             $cl = $matches[1]
             $changes.Add($cl) > $null
         }
@@ -255,29 +239,20 @@ function P4_GetPendingChangeLists
     return $changes
 }
 
-function internal_FStat
-{
+function internal_FStat {
     param(
-        [Parameter(Mandatory=$true, Position=0)]
+        [Parameter(Mandatory = $true, Position = 0)]
         [System.Collections.ArrayList] $Paths
     )
 
     $encodedPaths = New-Object System.Collections.ArrayList
-    foreach ($path in $Paths)
-    {
+    foreach ($path in $Paths) {
         $encodedPath = P4_EncodePath $path
         $encodedPaths.Add($encodedPath) > $null
     }
 
-    $command = "p4 fstat $($encodedPaths -join ' ')"
-    Write-Debug "EXEC: $command"
-
-    $output = p4 fstat @encodedPaths
-
-    if ($LASTEXITCODE -ne 0)
-    {
-        throw [P4_Exception]::new($command, $LASTEXITCODE)
-    }
+    # Using Invoke-P4 wrapper
+    $output = Invoke-P4 "fstat", $encodedPaths
 
     $lines = $output -split "`r`n|`n|`r"
 
@@ -285,17 +260,14 @@ function internal_FStat
     $isInFile = $false
     $lineNum = 0
 
-    foreach ($line in $lines)
-    {
+    foreach ($line in $lines) {
         $lineNum += 1
 
-        if ($line -match '^\.\.\. (\S+)\s*(.*)')
-        {
+        if ($line -match '^\.\.\. (\S+)\s*(.*)') {
             $key = $matches[1]
             $value = $matches[2]
 
-            if ($key -eq "depotFile")
-            {
+            if ($key -eq "depotFile") {
                 # decode the path so application code doesn't need to worry about encoding/decoding
                 # all the time, we just do it automatically
                 $value = P4_DecodePath $value
@@ -305,13 +277,11 @@ function internal_FStat
             # and is set. Checking for that in powershell is annoying, so we'll change the value to $true
             # so we can simply check if this property value is true rather than checking if it exists
             # as an empty string.
-            if ($value -eq "")
-            {
+            if ($value -eq "") {
                 $value = $true
             }
 
-            if ($key -eq "depotFile" -and -not $isInFile)
-            {
+            if ($key -eq "depotFile" -and -not $isInFile) {
                 # Starting a new file
                 $isInFile = $true
                 $fstat = [PSCustomObject]@{
@@ -319,15 +289,13 @@ function internal_FStat
                 }
                 continue
             }
-            elseif ($isInFile)
-            {
+            elseif ($isInFile) {
                 # Continuing the existing file
                 $fstat | Add-Member -Name $key -Type NoteProperty -Value $value
                 continue
             }
         }
-        elseif ($line -eq "")
-        {
+        elseif ($line -eq "") {
             $isInFile = $false
             $result.Add($fstat) > $null
             continue
@@ -339,10 +307,9 @@ function internal_FStat
     return $result
 }
 
-function P4_FStat
-{
+function P4_FStat {
     param(
-        [Parameter(Mandatory=$true, Position=0)]
+        [Parameter(Mandatory = $true, Position = 0)]
         [System.Collections.ArrayList] $Paths,
         [int] $MaxTries = 5,
         [int] $RetryInterval = 2
@@ -355,19 +322,15 @@ function P4_FStat
     $RetryInterval = [Math]::Max(1, $RetryInterval)
 
     $numTries = 0
-    while ($numTries -lt $MaxTries)
-    {
+    while ($numTries -lt $MaxTries) {
         $numTries ++
 
-        try
-        {
+        try {
             $result = internal_FStat $Paths
             return $result
         }
-        catch [P4_Exception]
-        {
-            if ($numTries -ge $MaxTries)
-            {
+        catch [P4_Exception] {
+            if ($numTries -ge $MaxTries) {
                 Write-Error $_
                 Write-Warning "Tried $numTries/$MaxTries times, giving up"
 
@@ -385,10 +348,9 @@ function P4_FStat
     throw "Programmer error, this code should not execute"
 }
 
-function P4_ParseSpecification
-{
+function P4_ParseSpecification {
     param(
-        [Parameter(Mandatory=$true, Position=0)]
+        [Parameter(Mandatory = $true, Position = 0)]
         [System.Collections.ArrayList] $Content
     )
 
@@ -397,28 +359,23 @@ function P4_ParseSpecification
     $inSectionName = $null
     $sectionValue = $null
 
-    for ($i=0; $i -lt $Content.Count; $i++)
-    {
+    for ($i = 0; $i -lt $Content.Count; $i++) {
         $line = $Content[$i]
         $lineNum = $i + 1
 
-        if ($line -eq $null)
-        {
+        if ($line -eq $null) {
             $message = "Unexpected null found at line $lineNum/$($Content.Count)"
             throw [P4_Parse_Exception]::new($message)
         }
 
         # Skip comment lines
-        if ($line -match '^#')
-        {
+        if ($line -match '^#') {
             continue
         }
 
         # Blank lines signify the end of a section
-        if ($line -eq "")
-        {
-            if ($inSectionName)
-            {
+        if ($line -eq "") {
+            if ($inSectionName) {
                 # Save the multiline $sectionValue (possibly $null if there was no multiline data)
                 $result | Add-Member -Name $inSectionName -Type NoteProperty -Value $sectionValue
             }
@@ -429,17 +386,14 @@ function P4_ParseSpecification
         }
 
         # If we're not in a section, we expect to open one
-        if ($inSectionName -eq $null)
-        {
+        if ($inSectionName -eq $null) {
             # Here we allow for whitespace at the beginning, but I'm not sure there will ever be any
-            if ($line -match '^\s*([^:]+):\s*(.*)')
-            {
+            if ($line -match '^\s*([^:]+):\s*(.*)') {
                 $inSectionName = $matches[1]
                 $sectionValue = $matches[2]  # either $null or a non-empty string
 
                 # If we got an inline section value, save it now
-                if ($sectionValue)
-                {
+                if ($sectionValue) {
                     $result | Add-Member -Name $inSectionName -Value $sectionValue -Type NoteProperty
 
                     # That's it, don't need to worry about any continuations for this section
@@ -458,12 +412,10 @@ function P4_ParseSpecification
 
         # We're currently in a section, processing continuation lines.
         # Each line must start with whitespace, and we trim it from the value.
-        if ($line -match '^\s+(.+)')
-        {
+        if ($line -match '^\s+(.+)') {
             $thisLineValue = $matches[1]
 
-            if (-not ($sectionValue))
-            {
+            if (-not ($sectionValue)) {
                 # We're adding the first line to this multiline value.
                 # Start with an empty array.
                 $sectionValue = New-Object System.Collections.ArrayList
@@ -480,8 +432,7 @@ function P4_ParseSpecification
     }
 
     # We've read the last line; if we're in a section we need to finish processing it
-    if ($inSectionName)
-    {
+    if ($inSectionName) {
         # Save the multiline $sectionValue (possibly $null if there was no multiline data)
         $result | Add-Member -Name $inSectionName -Value $sectionValue -Type NoteProperty
     }
@@ -489,10 +440,9 @@ function P4_ParseSpecification
     return $result
 }
 
-function P4_GetChange
-{
+function P4_GetChange {
     param(
-        [Parameter(Position=0)]
+        [Parameter(Position = 0)]
         [string] $CL = $null  # $null same as "default"
     )
 
@@ -500,20 +450,12 @@ function P4_GetChange
     [void] $args.Add('change')
     [void] $args.Add('-o')
 
-    if ($CL -ne $null -and $CL -ne "default")
-    {
+    if ($CL -ne $null -and $CL -ne "default") {
         [void] $args.Add($CL)
     }
 
-    $command = "p4 $($args -join ' ')"
-    Write-Debug "EXEC: $command"
-
-    $output = p4 @args
-
-    if ($LASTEXITCODE -ne 0)
-    {
-        throw [P4_Exception]::new($command, $LASTEXITCODE)
-    }
+    # Using Invoke-P4 wrapper
+    $output = Invoke-P4 $args
 
     # Split on lines regardless of which platform created the specification,
     # even if it was different from the current platform
@@ -524,52 +466,47 @@ function P4_GetChange
 
     # Every change specification *MUST* report at the very least the 'Change'
     # property, which is either 'new' or the CL number
-    if ($result.Change -eq $null)
-    {
-        throw [P4_Parse_Exception]::new("Command did not return a valid change specification: $command")
+    if ($result.Change -eq $null) {
+        throw [P4_Parse_Exception]::new("Command did not return a valid change specification: p4 change -o")
     }
 
     return $result
 }
 
-function P4_ParseChangeDescription
-{
+function P4_ParseChangeDescription {
     param(
-        [Parameter(Mandatory=$true, Position=0)]
+        [Parameter(Mandatory = $true, Position = 0)]
         [System.Collections.ArrayList] $Content
     )
 
     # The first line must be "Change <CL> by <user>@<host> on <date>"
-    if (-not($Content[0] -match "^Change (\d+) by ([^@]+)@(\S*) on ([\d\-/ \:]+)\s*$"))
-    {
+    if (-not($Content[0] -match "^Change (\d+) by ([^@]+)@(\S*) on ([\d\-/ \:]+)\s*$")) {
         $message = "Invalid change identity at line 1/$($Content.Count)"
         throw [P4_Parse_Exception]::new($message)
     }
 
     $result = [PSCustomObject]@{
-        Change = $matches[1]
-        User = $matches[2]
-        Client = $matches[3]
-        Date = $matches[4]
+        Change      = $matches[1]
+        User        = $matches[2]
+        Client      = $matches[3]
+        Date        = $matches[4]
         Description = $null
-        Files = New-Object System.Collections.ArrayList
+        Files       = New-Object System.Collections.ArrayList
     }
 
     # The following lines are the CL description, until we get to "Affected files ..."
     $descTemp = New-Object System.Collections.ArrayList
-    for ($i=1; $i -lt $Content.Count; $i++)  # NOTICE: start at 1, skip first line
-    {
+    for ($i = 1; $i -lt $Content.Count; $i++) {
+        # NOTICE: start at 1, skip first line
         $line = $Content[$i]
         $lineNum = $i + 1
 
-        if ($line -eq $null)
-        {
+        if ($line -eq $null) {
             $message = "Unexpected null found at line $lineNum/$($Content.Count)"
             throw [P4_Parse_Exception]::new($message)
         }
 
-        if ($line -eq "Affected files ...")
-        {
+        if ($line -eq "Affected files ...") {
             # We've finished reading the description
             # Skip this line
             $i++
@@ -580,13 +517,11 @@ function P4_ParseChangeDescription
         [void] $descTemp.Add(($line -replace '(^\s+|\s+$)', ''))
     }
 
-    if ($descTemp.Count -gt 2 -and $descTemp[0] -eq "" -and $descTemp[$descTemp.Count-1] -eq "")
-    {
+    if ($descTemp.Count -gt 2 -and $descTemp[0] -eq "" -and $descTemp[$descTemp.Count - 1] -eq "") {
         # Skip the first and the last line, they are empty
-        $result.Description = $descTemp[1..($descTemp.Count-2)] -join [Environment]::NewLine
+        $result.Description = $descTemp[1..($descTemp.Count - 2)] -join [Environment]::NewLine
     }
-    else
-    {
+    else {
         # Unexpected output format, keep it as-is
         $result.Description = $descTemp -join [Environment]::NewLine
     }
@@ -594,24 +529,22 @@ function P4_ParseChangeDescription
     # The following lines are "... //Depot/File#rev changeType"
     # with possible empty lines
 
-    for (; $i -lt $Content.Count; $i++)  # NOTICE: DO NOT RESET $i, keep processing the rest of the content
-    {
+    for (; $i -lt $Content.Count; $i++) {
+        # NOTICE: DO NOT RESET $i, keep processing the rest of the content
         $line = $Content[$i]
         $lineNum = $i + 1
 
-        if ($line -eq $null)
-        {
+        if ($line -eq $null) {
             $message = "Unexpected null found at line $lineNum/$($Content.Count)"
             throw [P4_Parse_Exception]::new($message)
         }
 
         if ($line -eq "") { continue }
 
-        if ($line -match "^\.\.\.\s+([^#]+)#(\d+)\s+(.*)$")
-        {
+        if ($line -match "^\.\.\.\s+([^#]+)#(\d+)\s+(.*)$") {
             $fileOp = [PSCustomObject]@{
-                Path = P4_DecodePath -Path $matches[1]
-                Revision = [Convert]::ToInt32($matches[2])
+                Path       = P4_DecodePath -Path $matches[1]
+                Revision   = [Convert]::ToInt32($matches[2])
                 ChangeType = $matches[3]
             }
 
@@ -627,15 +560,13 @@ function P4_ParseChangeDescription
     return $result
 }
 
-function P4_Describe
-{
+function P4_Describe {
     param(
-        [Parameter(Position=0)]
+        [Parameter(Position = 0)]
         [string] $CL
     )
 
-    if ($CL -eq $null -or $CL -eq "default")
-    {
+    if ($CL -eq $null -or $CL -eq "default") {
         throw "You must specify a submitted CL for P4_Describe"
     }
 
@@ -644,15 +575,8 @@ function P4_Describe
     [void] $args.Add('-s')
     [void] $args.Add($CL)
 
-    $command = "p4 $($args -join ' ')"
-    Write-Debug "EXEC: $command"
-
-    $output = p4 @args
-
-    if ($LASTEXITCODE -ne 0)
-    {
-        throw [P4_Exception]::new($command, $LASTEXITCODE)
-    }
+    # Using Invoke-P4 wrapper
+    $output = Invoke-P4 $args
 
     # Split on lines regardless of which platform created the specification,
     # even if it was different from the current platform
@@ -662,23 +586,20 @@ function P4_Describe
     $result = P4_ParseChangeDescription -Content $lines
 
     # If the parse didn't yield the CL we requested, that's a problem
-    if ($result.Change -ne $CL)
-    {
-        throw [P4_Parse_Exception]::new("Command did not return a valid change description: $command")
+    if ($result.Change -ne $CL) {
+        throw [P4_Parse_Exception]::new("Command did not return a valid change description: p4 describe -s $CL")
     }
 
     return $result
 }
 
-function P4_StreamInfo
-{
+function P4_StreamInfo {
     param(
-        [Parameter(Position=0)]
+        [Parameter(Position = 0)]
         [string] $Stream
     )
 
-    if ($Stream -eq $null -or $Stream -eq "")
-    {
+    if ($Stream -eq $null -or $Stream -eq "") {
         throw "You must specify a Stream for P4_StreamInfo"
     }
 
@@ -687,15 +608,8 @@ function P4_StreamInfo
     [void] $args.Add('-o')
     [void] $args.Add($Stream)
 
-    $command = "p4 $($args -join ' ')"
-    Write-Debug "EXEC: $command"
-
-    $output = p4 @args
-
-    if ($LASTEXITCODE -ne 0)
-    {
-        throw [P4_Exception]::new($command, $LASTEXITCODE)
-    }
+    # Using Invoke-P4 wrapper
+    $output = Invoke-P4 $args
 
     # Split on lines regardless of which platform created the specification,
     # even if it was different from the current platform
@@ -705,9 +619,8 @@ function P4_StreamInfo
     $result = P4_ParseSpecification -Content $lines
 
     # We expect to have gotten info on the stream we requested
-    if ($result.Stream -ne $Stream)
-    {
-        throw [P4_Parse_Exception]::new("Command did not return the expected Stream info: $command")
+    if ($result.Stream -ne $Stream) {
+        throw [P4_Parse_Exception]::new("Command did not return the expected Stream info: p4 stream -o $Stream")
     }
 
     return $result
