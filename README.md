@@ -43,12 +43,9 @@ I encourage you to research it further on your own.
 
 - [GitMakeExecutable.ps1](#gitmakeexecutableps1)
   - Make files executable in Git (and chmod +x on *nix)
-- [Idea.ps1](#ideaps1)
-  - Open IntelliJ Idea for the given project
 - [PSVersionCheck.ps1](#psversioncheckps1)
   - Ensure PowerShell 7+ is being used
-- [PyCharm.ps1](#pycharmps1)
-  - Open PyCharm for the given project
+
 
 
 
@@ -71,9 +68,38 @@ I encourage you to research it further on your own.
 - [Rider.ps1](#riderps1)
   - Export `.p4config` to Rider Environment
   - Edit a project in Rider
+- [Idea.ps1](#ideaps1)
+  - Open IntelliJ Idea for the given project
+- [PyCharm.ps1](#pycharmps1)
+  - Open PyCharm for the given project
 - [VS.ps1](#vsps1)
 	- Export `.p4config` to Visual Studio Environment
   - Edit a project in Visual Studio
+  
+## JetBrains Toolbox Setup
+
+If you use the JetBrains Toolbox (which I do recommend), you must ensure that your IDE shell scripts
+are named effectively so that they do not conflict with these scripts.
+
+On Windows, `Rider.ps1` can be executed by valid PowerShell simply by typing `Rider`.
+Toolbox by default creates a `rider.cmd` shell script, which also responds to `rider` (or `Rider`).
+This causes a conflict, where you might want to run the PowerShell script but instead you get the
+Toolbox shell script, or worst case, you get an infinite loop of scripts.
+
+To solve this, I configure my Toolbox to create shell scripts with a `1` suffix.
+
+![Step 1](Docs/Images/JBT-1.png)
+
+1. Open Toolbox Settings for the IDE you want to configure.
+
+![Step 2](Docs/Images/JBT-2.png)
+
+2. Choose **Configuration**.
+
+![Step 3](Docs/Images/JBT-3.png)
+
+3. Change the **Shell script name** to include a `1` suffix (e.g. `Rider1`, `Idea1`, `PyCharm1`).
+
 
 
 # Engine Tools
