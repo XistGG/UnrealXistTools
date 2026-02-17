@@ -18,6 +18,7 @@
 [CmdletBinding()]
 param(
     [switch]$Force,
+    [Parameter(Position = 0)]
     [string]$SCL
 )
 
@@ -29,8 +30,7 @@ Import-Module -Name $PSScriptRoot/Modules/P4.psm1
 
 $ScriptName = $MyInvocation.MyCommand.Name
 
-function Usage
-{
+function Usage {
     $err = "`n" +
     "Usage: $ScriptName [-Debug] [-Force] -SCL 123`n" +
     "`n" +
@@ -43,8 +43,7 @@ function Usage
     exit 1
 }
 
-if (!$SCL -or $SCL -eq "")
-{
+if (!$SCL -or $SCL -eq "") {
     & Usage
 }
 
@@ -60,8 +59,7 @@ Write-Debug "EXEC: $command"
 $output = p4 opened 2> $null
 $code = $LASTEXITCODE
 
-if ($code -ne 0)
-{
+if ($code -ne 0) {
     Write-Error "Error checking for pending p4 changes; Command executed: $command"
     throw "Unexpected exit code: $code"
 }
@@ -69,12 +67,10 @@ if ($code -ne 0)
 $lines = $output -split "`n"  # Note: $lines may have trailing `r characters
 $RevertList = @()
 
-foreach ($line in $lines)
-{
-    $Result =& P4_ParseChangeLine $line
+foreach ($line in $lines) {
+    $Result = & P4_ParseChangeLine $line
 
-    if (-not $Result.IsChange)
-    {
+    if (-not $Result.IsChange) {
         Write-Warning "Unexpected output line: $line"
         continue
     }
@@ -86,13 +82,11 @@ foreach ($line in $lines)
 
     Write-Debug "Pending Change: $Result"
 
-    if (-not $Force)
-    {
+    if (-not $Force) {
         $response = Read-Host "Revert file $($Result.P4Path)? (y|N) [N] "
         $confirmed = $response -ieq 'y'
 
-        if (-not $confirmed)
-        {
+        if (-not $confirmed) {
             # User does not want to revert this file. Abort execution.
             # User will need to clean up their p4 workspace and try again.
 
@@ -102,7 +96,7 @@ foreach ($line in $lines)
     }
 
     # Store the encoded, escaped version of the path in the $RevertList
-    $EncodedPath =& P4_EncodePath $Result.P4Path
+    $EncodedPath = & P4_EncodePath $Result.P4Path
     $RevertList += $EncodedPath
 }
 
@@ -110,8 +104,7 @@ foreach ($line in $lines)
 ##  Revert all pending changes in all changelists
 ################################################################################
 
-if ($RevertList.Count -gt 0)
-{
+if ($RevertList.Count -gt 0) {
     Write-Host "Reverting all pending P4 changes..."
 
     $command = "p4 revert -w $($RevertList -join " ")"
@@ -120,8 +113,7 @@ if ($RevertList.Count -gt 0)
     p4 revert -w $RevertList
     $code = $LASTEXITCODE
 
-    if ($code -ne 0)
-    {
+    if ($code -ne 0) {
         Write-Error "Error reverting p4 changes; Command executed: $command"
         throw "Unexpected exit code: $code"
     }
@@ -139,8 +131,7 @@ Write-Debug "EXEC: $command"
 p4 unshelve -s $SCL -c default -Af
 $code = $LASTEXITCODE
 
-if ($code -ne 0)
-{
+if ($code -ne 0) {
     Write-Error "Error unshelving P4 files; Command executed: $command"
     throw "Unexpected exit code: $code"
 }

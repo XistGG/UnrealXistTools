@@ -39,6 +39,16 @@ Also I am no PowerShell security expert, so if you are concerned about this,
 I encourage you to research it further on your own.
 
 
+# Other Scripts
+
+- [GitMakeExecutable.ps1](#gitmakeexecutableps1)
+  - Make files executable in Git (and chmod +x on *nix)
+- [PSVersionCheck.ps1](#psversioncheckps1)
+  - Ensure PowerShell 7+ is being used
+
+
+
+
 # Build Tools
 
 - [UAT.ps1](#uatps1)
@@ -58,9 +68,38 @@ I encourage you to research it further on your own.
 - [Rider.ps1](#riderps1)
   - Export `.p4config` to Rider Environment
   - Edit a project in Rider
+- [Idea.ps1](#ideaps1)
+  - Open IntelliJ Idea for the given project
+- [PyCharm.ps1](#pycharmps1)
+  - Open PyCharm for the given project
 - [VS.ps1](#vsps1)
 	- Export `.p4config` to Visual Studio Environment
   - Edit a project in Visual Studio
+  
+## JetBrains Toolbox Setup
+
+If you use the JetBrains Toolbox (which I do recommend), you must ensure that your IDE shell scripts
+are named effectively so that they do not conflict with these scripts.
+
+On Windows, `Rider.ps1` can be executed by valid PowerShell simply by typing `Rider`.
+Toolbox by default creates a `rider.cmd` shell script, which also responds to `rider` (or `Rider`).
+This causes a conflict, where you might want to run the PowerShell script but instead you get the
+Toolbox shell script, or worst case, you get an infinite loop of scripts.
+
+To solve this, I configure my Toolbox to create shell scripts with a `1` suffix.
+
+![Step 1](Docs/Images/JBT-1.png)
+
+1. Open Toolbox Settings for the IDE you want to configure.
+
+![Step 2](Docs/Images/JBT-2.png)
+
+2. Choose **Configuration**.
+
+![Step 3](Docs/Images/JBT-3.png)
+
+3. Change the **Shell script name** to include a `1` suffix (e.g. `Rider1`, `Idea1`, `PyCharm1`).
+
 
 
 # Engine Tools
@@ -79,6 +118,8 @@ I encourage you to research it further on your own.
   - Get the `.uproject` file associated with a path (current directory by default)
 - [UProjectSln.ps1](#uprojectslnps1)
   - Get the `.sln` file associated with a path (current directory by default)
+- [RefactorUProject.ps1](#refactoruprojectps1)
+  - Refactor a UE project (renames project, source, API macros, redirects)
 
 
 # P4 Tools
@@ -101,6 +142,8 @@ I encourage you to research it further on your own.
 - [P4FStat.ps1](#p4fstatps1)
   - Provides easy access to `p4 fstat file` output
   - `$(P4FStat.ps1 myfile).headType` (== `text+w` for example)
+- [P4FilterIgnored.ps1](#p4filterignoredps1)
+  - Filter a list of paths, separating them into Ignored and Valid lists
 - [P4ImportBulk.ps1](#p4importbulkps1)
   - Import a massive number of files into a new depot without breaking P4
     (tested by importing 800k+ files from UDN P4 `//UE5/Release-5.2`)
@@ -109,6 +152,10 @@ I encourage you to research it further on your own.
 - [P4LastGreenBuild.ps1](#p4lastgreenbuildps1)
   - Show the `Paths` array for the `//UE5/Dev-Main-LastGreenBuild` virtual stream
   - Makes it super simple to know which CL to sync to in `//UE5/Main`
+- [P4ListIgnoredFiles.ps1](#p4listignoredfilesps1)
+  - Recursively list files that should be ignored by P4
+- [P4NukeCL.ps1](#p4nukeclps1)
+  - Revert all files in a CL (updates P4 state) without modifying local files
 - [P4ObliterateIgnoredFiles.ps1](#p4obliterateignoredfilesps1)
   - Recursively scan the given path, searching for files that were added to p4
     but are supposed to be ignored, and obliterate any such files from the p4 server.
@@ -538,6 +585,23 @@ UProjectSln.ps1 project.sln
 ```
 
 
+# RefactorUProject.ps1
+
+[view source: RefactorUProject.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/RefactorUProject.ps1)
+
+Compatibility: Windows only (due to `UProjectClean.ps1` dependency for generating project files, and `Rider.ps1` for opening them) - logic is cross-platform though.
+
+Refactor an Unreal Engine Project. this renames the project, source files, API macros, and setup CoreRedirects in DefaultEngine.ini.
+
+**WARNING:** This does **NOT** rename `.uasset` files. You must manually fix up assets in the Editor after running this.
+
+### Usage Example
+
+```powershell
+RefactorUProject.ps1 -From D:/Old/Game -To D:/New/Game -OldPackageName OldGame -NewPackageName NewGame -OldCodePrefix OLD -NewCodePrefix NEW -Force
+```
+
+
 --------------------------------------------------------------------------------
 
 # P4AutoResolveToDefaultCL.ps1 
@@ -575,7 +639,7 @@ Procedure:
 In the example above, we used CL#123, which is done with the following command:
 
 ```powershell
-P4AutoResolveToDefaultCL.ps1 -CL 123 -Debug
+P4AutoResolveToDefaultCL.ps1 123 -Debug
 ```
 
 As usual, the `-Debug` flag is optional and provides more insight into what the
@@ -701,6 +765,22 @@ PS /Users/xist/dev/Xim> $result[1].depotFile
 ```
 
 
+# P4FilterIgnored.ps1
+
+[view source: P4FilterIgnored.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/P4FilterIgnored.ps1)
+
+Compatibility: Linux + Mac + Windows
+
+Split all the paths into 2 groups: Ignored and Not-Ignored.
+
+### Usage Example
+
+```powershell
+$result = P4FilterIgnored.ps1 $(Get-ChildItem Config,Plugins,Source -Force -Recurse -File)
+$result.ValidPaths | %{ Write-Output "Do something with $_" }
+```
+
+
 # P4ImportBulk.ps1
 
 [view source: P4ImportBulk.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/P4ImportBulk.ps1)
@@ -761,6 +841,37 @@ You can then sync `//UE5/Main` to the CL displayed in the output.
 ```powershell
 PS> P4LastGreenBuild.ps1
 import ... //UE5/Main/...@40123400
+```
+
+
+# P4ListIgnoredFiles.ps1
+
+[view source: P4ListIgnoredFiles.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/P4ListIgnoredFiles.ps1)
+
+Compatibility: Linux + Mac + Windows
+
+Recursively iterate $Path and list all existing files that SHOULD BE IGNORED by P4.
+
+### Usage Example
+
+```powershell
+P4ListIgnoredFiles.ps1 .
+```
+
+
+# P4NukeCL.ps1
+
+[view source: P4NukeCL.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/P4NukeCL.ps1)
+
+Compatibility: Linux + Mac + Windows
+
+Given a CL that contains a bunch of changes, completely nuke it WITHOUT MODIFYING THE LOCAL FILES AT ALL.
+This reverts P4's state (unmarking files for add/delete/edit) but leaves the files on disk alone.
+
+### Usage Example
+
+```powershell
+P4NukeCL.ps1 123
 ```
 
 
@@ -880,16 +991,72 @@ unshelved changes, I just repeatedly "re-unshelve", discarding whatever
 the previous shelved files were and replacing them with the new variant.
 
 ```powershell
-P4Reunshelve.ps1 -SCL 123
+P4Reunshelve.ps1 123
 ```
 
 The above command will unshelve the files from CL# 123, prompting you
 for each and every file before it reverts anything.
 
 ```powershell
-P4Reunshelve.ps1 -Force -SCL 123
+P4Reunshelve.ps1 123 -Force
 ```
 
 **WARNING:** The above command with the `-Force` flag will revert **all changes**
 in **all changelists** in your current workspace without prompting you
 for confirmation.  It will then unshelve CL# 123.
+
+
+# Other Scripts
+
+## GitMakeExecutable.ps1
+
+[view source: GitMakeExecutable.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/GitMakeExecutable.ps1)
+
+Compatibility: Linux + Mac + Windows
+
+Make the given files Executable.
+- Mark them `chmod +x` in Git.
+- On Linux+Mac, also set the executable file system bit.
+
+### Usage Example
+
+```powershell
+GitMakeExecutable.ps1 MyScript.sh
+```
+
+## Idea.ps1
+
+[view source: Idea.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/Idea.ps1)
+
+Compatibility: Linux + Mac + Windows (requires JetBrains Toolbox or environment config)
+
+Open IntelliJ Idea for the given project root directory.
+
+### Usage Example
+
+```powershell
+Idea.ps1 .
+```
+
+## PSVersionCheck.ps1
+
+[view source: PSVersionCheck.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/PSVersionCheck.ps1)
+
+Compatibility: Linux + Mac + Windows
+
+Helper script to ensure the running PowerShell version is adequate (7+).
+Used by other scripts.
+
+## PyCharm.ps1
+
+[view source: PyCharm.ps1](https://github.com/XistGG/UnrealXistTools/blob/main/PyCharm.ps1)
+
+Compatibility: Linux + Mac + Windows (requires JetBrains Toolbox or environment config)
+
+Open PyCharm for the given project root directory.
+
+### Usage Example
+
+```powershell
+PyCharm.ps1 .
+```
