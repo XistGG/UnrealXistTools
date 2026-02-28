@@ -47,6 +47,18 @@
 .PARAMETER Distribution
     Add -Distribution flag.
 
+.PARAMETER Package
+    Package the project.
+
+.PARAMETER Pak
+    Combine assets into .pak files instead of leaving them loose.
+
+.PARAMETER Archive
+    Archive the build after packaging.
+
+.PARAMETER ArchiveDirectory
+    The directory to copy the archived build to.
+
 .PARAMETER Path
     Path to your ".uproject" file/directory.
     Will be auto-computed based on your current dir by default.
@@ -78,6 +90,10 @@ param(
     [switch]$BuildMachine,
     [switch]$CrashReporter,
     [switch]$Distribution,
+    [switch]$Package,
+    [switch]$Pak,
+    [switch]$Archive,
+    [string]$ArchiveDirectory,
     [Parameter(Position = 0)]$Path
 )
 
@@ -137,7 +153,7 @@ $UAT = $EngineConfig.UAT
 
 $Cook = $Cook -or $FullCook;  # -FullCook implies -Cook
 
-if ($Cook -or $Run -or $Stage) {
+if ($Cook -or $Run -or $Stage -or $Package) {
     $uargs = @(
         "BuildCookRun",
         "-Target=$Target",
@@ -155,7 +171,22 @@ if ($Cook -or $Run -or $Stage) {
     if ($Run) { $uargs += "-Run" }
 
     # -Stage requires either -Cook or -SkipCook
-    if ($Stage) { $uargs += "-Stage"; if (!$Cook) { $uargs += "-SkipCook" } }
+    if ($Stage) { 
+        $uargs += "-Stage"
+        if (!$Cook) { $uargs += "-SkipCook" } 
+    }
+
+    if ($Package) { 
+        $uargs += "-Package"
+        if (!$Stage) { 
+            $uargs += "-SkipStage" 
+            if (!$Cook) { $uargs += "-SkipCook" }
+        }
+    }
+
+    if ($Pak) { $uargs += "-pak" }
+    if ($Archive) { $uargs += "-archive" }
+    if ($ArchiveDirectory) { $uargs += "-archivedirectory=$ArchiveDirectory" }
 }
 elseif ($Build) {
     # If all we want to do is -Build, then run UBT instead of UAT
