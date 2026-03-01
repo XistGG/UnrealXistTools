@@ -97,13 +97,34 @@ param(
     [Parameter(Position = 0)]$Path
 )
 
-# Make sure the powershell version is good, or throw an exception
-& $PSScriptRoot/PSVersionCheck.ps1
+begin {
+    if ($PSVersionTable.PSVersion.Major -lt 7) { throw "PowerShell 7+ is required." }
 
-# Import the UE helper module
-Import-Module -Name $PSScriptRoot/Modules/UE.psm1
+    # The path to the project root dir.
+    # THIS MUST BE SET CORRECTLY, MODIFY THIS AS NEEDED BASED ON THE PATH TO THIS SCRIPT.
+    $PROJECT_ROOT = Resolve-Path "$PSScriptRoot/../.."
 
-$ScriptName = $MyInvocation.MyCommand.Name
+    # Configure some variables commonly needed in executables
+    $SCRIPT_ROOT = $PSScriptRoot -replace '\\', '/'
+    $SCRIPT_NAME = $MyInvocation.MyCommand.Name
+    $WithDebug = $PSBoundParameters.ContainsKey('Debug')
+
+    # Once we know the correct project root, reformat it as a posix path.
+    $PROJECT_ROOT = $PROJECT_ROOT -replace '\\', '/'
+
+    Write-Debug "ProjectRoot: $PROJECT_ROOT"
+    Write-Debug "ScriptPath: $SCRIPT_ROOT/$SCRIPT_NAME"
+    Write-Debug "WithDebug: $WithDebug"
+
+    # Make sure the powershell version is good, or throw an exception
+    & $SCRIPT_ROOT/PSVersionCheck.ps1
+}
+
+process {
+    # Import the UE helper module
+    Import-Module -Name $SCRIPT_ROOT/Modules/UE.psm1
+
+    $ScriptName = $SCRIPT_NAME
 
 
 ################################################################################
@@ -170,21 +191,13 @@ if ($Cook -or $Run -or $Stage -or $Package) {
     if ($Cook) { $uargs += "-Cook"; if (!$FullCook) { $uargs += "-Iterative" } }
     if ($Run) { $uargs += "-Run" }
 
-    # -Stage requires either -Cook or -SkipCook
-    if ($Stage) { 
-        $uargs += "-Stage"
-        if (!$Cook) { $uargs += "-SkipCook" } 
-    }
-
-    if ($Package) { 
-        $uargs += "-Package"
-        if (!$Stage) { 
-            $uargs += "-SkipStage" 
-            if (!$Cook) { $uargs += "-SkipCook" }
-        }
-    }
-
+    # UAT downstream phases require explicit skip flags for upstream phases
+    if ($Stage) { $uargs += "-Stage" }
+    if ($Package) { $uargs += "-Package" }
     if ($Pak) { $uargs += "-pak" }
+
+    if (!$Stage -and ($Package -or $Pak)) { $uargs += "-SkipStage" }
+    if (!$Cook -and ($Stage -or $Package -or $Pak)) { $uargs += "-SkipCook" }
     if ($Archive) { $uargs += "-archive" }
     if ($ArchiveDirectory) { $uargs += "-archivedirectory=$ArchiveDirectory" }
 }
@@ -215,4 +228,5 @@ Write-Debug "${ScriptName}: EXEC: $UAT $uargs"
 & $UAT @uargs
 
 # Explicitly exit with the same exit code as UAT/UBT exited with
-exit $LASTEXITCODE
+    exit $LASTEXITCODE
+}
