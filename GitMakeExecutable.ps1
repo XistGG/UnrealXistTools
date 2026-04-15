@@ -5,12 +5,12 @@
 #	Make the given files Executable.
 #	
 #	- Mark them chmod +x in Git.
-#	- On Linux+Mac, also set the executable file system bit.
+#	- On Linux+Mac, also chmod +x in the worktree.
 #
 
 [CmdletBinding()]
 param(
-	[Parameter(ValueFromRemainingArguments=$true, Position=0)]
+	[Parameter(ValueFromRemainingArguments = $true, Position = 0)]
 	[string[]] $files
 )
 
@@ -21,8 +21,7 @@ param(
 ##  Main
 ##
 
-if (-not $files -or -not $files.Count)
-{
+if (-not $files -or -not $files.Count) {
 	$ScriptName = $MyInvocation.MyCommand.Name
 	Write-Error "Usage: $ScriptName file1 [file2] [...] [fileN]"
 	exit(1)
@@ -30,25 +29,31 @@ if (-not $files -or -not $files.Count)
 
 $numErrors = 0
 
-foreach ($file in $files)
-{
-	if (-not (Test-Path $file))
-	{
+$resolvedFiles = @()
+foreach ($filePattern in $files) {
+	$paths = Resolve-Path -Path $filePattern -ErrorAction SilentlyContinue
+	if (-not $paths) {
 		$numErrors += 1
-		Write-Error "No such file: $file"
+		Write-Error "No such file or pattern: $filePattern"
 		continue
 	}
+	foreach ($pathInfo in $paths) {
+		$resolvedFiles += $pathInfo.ProviderPath
+	}
+}
 
+$resolvedFiles = $resolvedFiles | Select-Object -Unique
+
+foreach ($file in $resolvedFiles) {
 	Write-Host "Make executable: $file"
 
 	Write-Debug "EXEC: git update-index --chmod=+x $file"
 	& git update-index --chmod=+x $file
 	if ($LASTEXITCODE -ne 0) { $numErrors += 1 }
 
-	if ($IsLinux -or $IsMacOS)
-	{
-		Write-Debug "EXEC: chmod 755 $file"
-		& chmod "755" $file
+	if ($IsLinux -or $IsMacOS) {
+		Write-Debug "EXEC: chmod +x $file"
+		& chmod +x $file
 		if ($LASTEXITCODE -ne 0) { $numErrors += 1 }
 	}
 }
