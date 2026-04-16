@@ -127,106 +127,103 @@ process {
     $ScriptName = $SCRIPT_NAME
 
 
-################################################################################
-##  Initialization
-################################################################################
+    ################################################################################
+    ##  Initialization
+    ################################################################################
 
-try {
-    # Convert the -Path param (if any) to a $UProjectInfo object
-    $UProjectInfo = & $PSScriptRoot\UProject.ps1 -Path:$Path
-}
-catch {
-    Write-Error "Unable to read the UProject file at -Path `"$Path`", check your -Path argument and try again."
-    throw $_
-}
+    try {
+        # Convert the -Path param (if any) to a $UProjectInfo object
+        $UProjectInfo = & $PSScriptRoot\UProject.ps1 -Path:$Path
+    }
+    catch {
+        Write-Error "Unable to read the UProject file at -Path `"$Path`", check your -Path argument and try again."
+        throw $_
+    }
 
-$UProjectFileItem = Get-Item $UProjectInfo._UProjectFile
-$UProjectFile = $UProjectFileItem.FullName
+    $UProjectFileItem = Get-Item $UProjectInfo._UProjectFile
+    $UProjectFile = $UProjectFileItem.FullName
 
-Write-Debug "${ScriptName}: Using UProject = $UProjectFile"
+    Write-Debug "${ScriptName}: Using UProject = $UProjectFile"
 
-$EngineAssociation = $UProjectInfo.EngineAssociation
+    $EngineAssociation = $UProjectInfo.EngineAssociation
 
-Write-Debug "${ScriptName}: Searching for UEngine: UProject.EngineAssociation = `"$EngineAssociation`""
+    Write-Debug "${ScriptName}: Searching for UEngine: UProject.EngineAssociation = `"$EngineAssociation`""
 
-$Engine = & UE_GetEngineByAssociation -UProjectFile:$UProjectFile -EngineAssociation:$EngineAssociation
+    $Engine = & UE_GetEngineByAssociation -UProjectFile:$UProjectFile -EngineAssociation:$EngineAssociation
 
-if (!$Engine -or !$Engine.Root) {
-    Write-Error "Error determining the Engine directory associated with UProject `"$UProjectFile`", which is associated with Engine `"$EngineAssociation`""
-    throw "Invalid Engine Directory `"$($Engine.Root)`""
-}
+    if (!$Engine -or !$Engine.Root) {
+        Write-Error "Error determining the Engine directory associated with UProject `"$UProjectFile`", which is associated with Engine `"$EngineAssociation`""
+        throw "Invalid Engine Directory `"$($Engine.Root)`""
+    }
 
-$EngineDir = Join-Path $Engine.Root "Engine"
+    $EngineDir = Join-Path $Engine.Root "Engine"
 
-Write-Debug "${ScriptName}: Using Engine `"$EngineDir`" for UProject `"$UProjectFile`" EngineAssociation `"$EngineAssociation`""
+    Write-Debug "${ScriptName}: Using Engine `"$EngineDir`" for UProject `"$UProjectFile`" EngineAssociation `"$EngineAssociation`""
 
-if (!(Test-Path -Path $EngineDir -PathType Container)) {
-    throw "Invalid Engine Directory `"$EngineDir`""
-}
+    if (!(Test-Path -Path $EngineDir -PathType Container)) {
+        throw "Invalid Engine Directory `"$EngineDir`""
+    }
 
-$EngineConfig = & UE_GetEngineConfig -BuildConfig:$Config -EngineDir:$EngineDir
+    $EngineConfig = & UE_GetEngineConfig -BuildConfig:$Config -EngineDir:$EngineDir
 
-$uargs = @(
-    "-ScriptsForProject=$UProjectFile"
-)
-
-$UAT = $EngineConfig.UAT
-
-$Cook = $Cook -or $FullCook;  # -FullCook implies -Cook
-
-if ($Cook -or $Run -or $Stage -or $Package) {
     $uargs = @(
-        "BuildCookRun",
-        "-Target=$Target",
-        "-Platform=$($EngineConfig.Platform)",
-        "-Config=$Config",
-        "-Project=$UProjectFile",
-        "-UnrealExe=$($EngineConfig.Binaries.EditorCmdName)",
-        "-NoP4"
+        "-ScriptsForProject=$UProjectFile"
     )
 
-    if ($Build) { $uargs += "-Build" }
+    $UAT = $EngineConfig.UAT
 
-    # By default, -Cook is iterative. Use -FullCook to disable iterative cooking.
-    if ($Cook) { $uargs += "-Cook"; if (!$FullCook) { $uargs += "-Iterative" } }
-    if ($Run) { $uargs += "-Run" }
+    $Cook = $Cook -or $FullCook;  # -FullCook implies -Cook
 
-    # UAT downstream phases require explicit skip flags for upstream phases
-    if ($Stage) { $uargs += "-Stage" }
-    if ($Package) { $uargs += "-Package" }
-    if ($Pak) { $uargs += "-pak" }
+    if ($Cook -or $Run -or $Stage -or $Package) {
+        $uargs = @(
+            "BuildCookRun",
+            "-Target=$Target",
+            "-Platform=$($EngineConfig.Platform)",
+            "-Config=$Config",
+            "-Project=$UProjectFile",
+            "-UnrealExe=$($EngineConfig.Binaries.EditorCmdName)",
+            "-NoP4"
+        )
 
-    if (!$Stage -and ($Package -or $Pak)) { $uargs += "-SkipStage" }
-    if (!$Cook -and ($Stage -or $Package -or $Pak)) { $uargs += "-SkipCook" }
-    if ($Archive) { $uargs += "-archive" }
-    if ($ArchiveDirectory) { $uargs += "-archivedirectory=$ArchiveDirectory" }
-}
-elseif ($Build) {
-    # If all we want to do is -Build, then run UBT instead of UAT
-    $UAT = $EngineConfig.UBT
+        if ($Build) { $uargs += "-Build" } else { $uargs += "-SkipBuild" }
+        # By default, -Cook is iterative. Use -FullCook to disable iterative cooking.
+        if ($Cook) { $uargs += "-Cook"; if (!$FullCook) { $uargs += "-Iterative" } } else { $uargs += "-SkipCook" }
+        if ($Run) { $uargs += "-Run" } else { $uargs += "-SkipRun" }
 
-    # Override all previously set $uargs since we're running UBT instead of UAT
-    $uargs = @(
-        $Target,
-        $EngineConfig.Platform,
-        $Config
-    )
-}
-else {
-    & Usage
-}
+        # UAT downstream phases require explicit skip flags for upstream phases
+        if ($Stage) { $uargs += "-Stage" } else { $uargs += "-SkipStage" }
+        if ($Package) { $uargs += "-Package" } else { $uargs += "-SkipPackage" }
+        if ($Pak) { $uargs += "-Pak" } else { $uargs += "-SkipPak" }
 
-# Add additional optional pass-thru flags
-if ($BuildMachine) { $uargs += "-BuildMachine" }
-if ($CrashReporter) { $uargs += "-CrashReporter" }
-if ($Distribution) { $uargs += "-Distribution" }
-if ($Module) { $uargs += "-Module=$Module" }
-if ($Server) { $uargs += "-Server" }
+        if ($Archive) { $uargs += "-Archive" }
+        if ($ArchiveDirectory) { $uargs += "-ArchiveDirectory=$ArchiveDirectory" }
+    }
+    elseif ($Build) {
+        # If all we want to do is -Build, then run UBT instead of UAT
+        $UAT = $EngineConfig.UBT
 
-# Run UAT or UBT with args
-Write-Debug "${ScriptName}: EXEC: $UAT $uargs"
-& $UAT @uargs
+        # Override all previously set $uargs since we're running UBT instead of UAT
+        $uargs = @(
+            $Target,
+            $EngineConfig.Platform,
+            $Config
+        )
+    }
+    else {
+        & Usage
+    }
 
-# Explicitly exit with the same exit code as UAT/UBT exited with
+    # Add additional optional pass-thru flags
+    if ($BuildMachine) { $uargs += "-BuildMachine" }
+    if ($CrashReporter) { $uargs += "-CrashReporter" }
+    if ($Distribution) { $uargs += "-Distribution" }
+    if ($Module) { $uargs += "-Module=$Module" }
+    if ($Server) { $uargs += "-Server" }
+
+    # Run UAT or UBT with args
+    Write-Debug "${ScriptName}: EXEC: $UAT $uargs"
+    & $UAT @uargs
+
+    # Explicitly exit with the same exit code as UAT/UBT exited with
     exit $LASTEXITCODE
 }
