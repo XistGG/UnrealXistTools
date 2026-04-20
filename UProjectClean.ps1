@@ -169,7 +169,7 @@ try
 		    # Execute the engine's GenerateProjectFiles.sh
 		    if ($UEngineConfig -and (Test-Path -Path $UEngineConfig.GenerateProjectFiles))
 		    {
-                Write-Debug "EXEC: ${$UEngineConfig.GenerateProjectFiles} $extraGenerateProjectFilesArgs"
+                Write-Debug "EXEC: $($UEngineConfig.GenerateProjectFiles) $extraGenerateProjectFilesArgs"
 	    		& $UEngineConfig.GenerateProjectFiles @extraGenerateProjectFilesArgs
 		    	exit $LASTEXITCODE
 		    }
