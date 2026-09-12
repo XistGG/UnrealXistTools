@@ -21,6 +21,6 @@ jobs:
       run:
         shell: pwsh
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Run tests with PowerShell 7 and pinned Pester
         run: pwsh -NoLogo -NoProfile -NonInteractive -File ./RunTests.ps1
