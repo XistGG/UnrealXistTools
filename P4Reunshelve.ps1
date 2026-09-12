@@ -1,4 +1,4 @@
-#!/usr/bin/env pwsh
+#!/usr/bin/env -S pwsh -NoLogo
 #
 # P4Reunshelve.ps1
 #

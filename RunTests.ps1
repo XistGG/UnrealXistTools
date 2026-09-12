@@ -1,3 +1,4 @@
+#!/usr/bin/env -S pwsh -NoLogo
 <#
 .SYNOPSIS
     Runs all Pester tests in the Tests/ directory.
