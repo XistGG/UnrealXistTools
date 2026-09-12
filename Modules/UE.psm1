@@ -120,27 +120,27 @@ function UE_GetEngineByAssociation
     {
         # In this case the $UProjectFile parameter is *required* since we need to use it
         # to determine where the ../ dir is.
-        if (!$UProjectFile -or !(Test-Path $UProjectFile))
+        if (!$UProjectFile -or !(Test-Path -LiteralPath $UProjectFile))
         {
             throw "Invalid UProjectFile `"$UProjectFile`"; you must give a valid one with an empty EngineAssociation"
         }
 
-        # Traverse up the path of the .uproject dir until we find a dir with an "Engine" dir in it.
-        $pathArray = $UProjectFile -replace '[\\/]', '/' -split '/'
-
-        # Start at $pathArray.Count - 3 because the last 2 are "Project/Project.uproject"
-        # so we know they cannot be the Engine root.
+        # Resolve relative/PSDrive paths, then walk directory parents. Splitting
+        # path strings loses the root slash on Unix and produces drive-relative
+        # paths ("C:" instead of "C:\") on Windows.
+        $projectPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($UProjectFile)
+        $projectDir = [System.IO.Directory]::GetParent($projectPath)
+        $candidate = $projectDir.Parent  # Engine is a sibling of the project dir
         $engineRootDir = $null
-        for ($i = $pathArray.Count - 3; $i -ge 0; $i--)
+        while ($null -ne $candidate)
         {
-            $tempRoot = ($pathArray[0..$i]) -join [System.IO.Path]::DirectorySeparatorChar
-            $testPath = Join-Path $tempRoot "Engine"
-            if (Test-Path -Path $testPath -PathType Container)
+            $testPath = Join-Path $candidate.FullName "Engine"
+            if (Test-Path -LiteralPath $testPath -PathType Container)
             {
-                # Stop as soon as we find the first Engine dir
-                $engineRootDir = $tempRoot
+                $engineRootDir = $candidate.FullName
                 break
             }
+            $candidate = $candidate.Parent
         }
 
         $result.Root = $engineRootDir  # possibly $null
@@ -334,7 +334,7 @@ function UE_SelectCustomEngine
 
     if ($Root)
     {
-        $RootItem = Get-Item -Path $Root 2> $null
+        $RootItem = Get-Item -LiteralPath $Root 2> $null
         if ($RootItem -and $RootItem.PSIsContainer)
         {
             # Ensure $Root is the absolute path to the directory, which is what will be stored in the registry
@@ -373,7 +373,7 @@ function UE_SelectCustomEngine
             # We want to search by root dir.
             # The registry might keep the Root in a non-standard format (e.g. on Windows "D:/Dir" instead of "D:\Dir")
             # Here we get the actual FullName of the directory for the sake of comparison.
-            $engineRootItem = Get-Item -Path $engine.Root 2> $null
+            $engineRootItem = Get-Item -LiteralPath $engine.Root 2> $null
             if ($engineRootItem -and $engineRootItem.PSIsContainer)
             {
                 Write-Debug "Compare desired -Root `"$Root`" with `"$($engineRootItem.FullName)`""
