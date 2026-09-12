@@ -39,6 +39,52 @@ Also I am no PowerShell security expert, so if you are concerned about this,
 I encourage you to research it further on your own.
 
 
+## Testing
+
+Run the automated suite from the repository root using **PowerShell 7+** on
+Windows, macOS, or Ubuntu:
+
+```powershell
+./RunTests.ps1
+```
+
+The runner installs **Pester 5.7.1** from PowerShell Gallery for the current user
+if necessary, and explicitly imports that version. The first run therefore needs
+internet access; subsequent runs can use the installed module offline. No Unreal
+Engine installation, Perforce client/server, or credentials are needed.
+
+Run just one test file with:
+
+```powershell
+./RunTests.ps1 -Path ./Tests/P4.Tests.ps1
+```
+
+The default test directory is resolved relative to `RunTests.ps1`, not the current
+working directory. Test failures, discovery/setup errors, and an empty suite return
+a nonzero process exit code. GitHub Actions runs the same command on Windows,
+macOS, and Ubuntu for pushes and pull requests.
+
+### Writing tests
+
+- Name automated tests `Tests/*.Tests.ps1` and use Pester 5 syntax
+  (`Should -Be`, `Should -Invoke`, etc.).
+- Import modules under test in `BeforeAll` with **`Import-Module -Force`** so edits
+  are picked up even when rerunning tests in the same PowerShell session.
+- Use Pester's `$TestDrive` and `Join-Path` for filesystem fixtures. Tests must not
+  write into the repository or the user's engine configuration.
+- Mock external commands and registration I/O in the calling module's scope
+  (`Mock ... -ModuleName P4` / `UE`). Only enter `InModuleScope` at test runtime
+  when testing private helpers.
+- Assert native platform paths/extensions rather than assuming `C:\` or `.exe`.
+  Both registration backends are unit-tested with mocked I/O on every platform.
+
+`Tests/P4_ParseFileType.Tests.ps1` contains data-driven assertions for file-type
+parsing and invalid-modifier warnings. It is automatically included in the suite,
+or can be run on its own with `-Path ./Tests/P4_ParseFileType.Tests.ps1`.
+The suite currently tests the core modules and runner, not end-to-end builds or
+every top-level tool.
+
+
 # Other Scripts
 
 - [GitMakeExecutable.ps1](#gitmakeexecutableps1)

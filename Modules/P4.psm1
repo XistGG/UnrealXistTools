@@ -160,7 +160,7 @@ function P4_FilterIgnoredPaths {
     try {
         # Using Invoke-P4 wrapper
         # Note: We pass arguments as a flat list/array for Invoke-P4
-        $output = Invoke-P4 "ignores", "-i", $Paths
+        $output = Invoke-P4 -Arguments (@('ignores', '-i') + @($Paths))
 
         $stdoutLines = $output -split "`r`n|`n|`r"
         $ignoredFiles = New-Object System.Collections.ArrayList
@@ -252,7 +252,7 @@ function internal_FStat {
     }
 
     # Using Invoke-P4 wrapper
-    $output = Invoke-P4 "fstat", $encodedPaths
+    $output = Invoke-P4 -Arguments (@('fstat') + @($encodedPaths))
 
     $lines = $output -split "`r`n|`n|`r"
 
@@ -296,12 +296,19 @@ function internal_FStat {
             }
         }
         elseif ($line -eq "") {
-            $isInFile = $false
-            $result.Add($fstat) > $null
+            if ($isInFile) {
+                $result.Add($fstat) > $null
+                $isInFile = $false
+            }
             continue
         }
 
         throw "Unexpected p4 fstat output near line ${lineNum}: $line"
+    }
+
+    # Native output need not include a blank separator after the last record.
+    if ($isInFile) {
+        $result.Add($fstat) > $null
     }
 
     return $result
@@ -450,7 +457,7 @@ function P4_GetChange {
     [void] $args.Add('change')
     [void] $args.Add('-o')
 
-    if ($CL -ne $null -and $CL -ne "default") {
+    if (-not [string]::IsNullOrEmpty($CL) -and $CL -ne "default") {
         [void] $args.Add($CL)
     }
 

@@ -11,7 +11,7 @@ This document outlines the future work and improvements planned for the `UnrealX
         -   `Modules/INI.psm1`
         -   `Modules/UE.psm1`
         -   `Modules/P4.psm1`
-        -   Existing tests are sparse (only `Tests/Test_P4_ParseFileType.ps1`).
+        -   Pester 5 suites cover the core modules and runner; expand edge-case and top-level script coverage.
 -   [ ] **Improve Documentation**:
     -   Expand `README.md` with more examples.
     -   Add inline help (Get-Help) to all `.ps1` and `.psm1` files.
@@ -21,7 +21,7 @@ This document outlines the future work and improvements planned for the `UnrealX
 ## Medium Priority
 
 -   [ ] **CI/CD Pipeline**:
-    -   Set up GitHub Actions to run tests on push/PR for automated testing.
+    -   [x] GitHub Actions runs Pester on Windows, macOS, and Ubuntu for pushes/PRs.
     -   Validate PowerShell script syntax (PSScriptAnalyzer).
 -   [ ] **Refactoring**:
     -   Ensure consistent error handling across all scripts.
